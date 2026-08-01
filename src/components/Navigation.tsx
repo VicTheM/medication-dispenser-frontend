@@ -9,11 +9,13 @@ import {
   Bell, 
   Settings as SettingsIcon,
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  Home
 } from 'lucide-react';
 import { UserRole } from '../types';
 
 export type TabType = 
+  | 'landing'
   | 'dashboard' 
   | 'patients' 
   | 'medications' 
@@ -40,6 +42,7 @@ export default function Navigation({
 }: NavigationProps) {
 
   const navItems: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
+    { id: 'landing', label: 'Overview & Hardware', icon: <Home className="w-4 h-4" /> },
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'patients', label: 'Patients', icon: <Users className="w-4 h-4" /> },
     { id: 'medications', label: '7-Compartment Schedules', icon: <Pill className="w-4 h-4" /> },
@@ -56,12 +59,15 @@ export default function Navigation({
       <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
         
         {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="bg-[#003482] text-white p-2 rounded-lg shadow-xs">
+        <div 
+          onClick={() => onTabChange('landing')} 
+          className="flex items-center gap-3 cursor-pointer group"
+        >
+          <div className="bg-[#003482] text-white p-2 rounded-lg shadow-xs group-hover:bg-[#0c4aac] transition-colors">
             <Activity className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="font-extrabold text-base tracking-tight text-[#003482] leading-tight">MedLab | Adherence pro</h1>
+            <h1 className="font-extrabold text-base tracking-tight text-[#003482] leading-tight group-hover:text-[#0c4aac]">MedLab | Adherence pro</h1>
             <p className="text-[10px] text-[#737784] font-semibold uppercase tracking-wider">7-Compartment Clinical Portal</p>
           </div>
         </div>

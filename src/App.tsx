@@ -36,6 +36,7 @@ import { api } from './lib/api';
 
 // Components
 import Navigation, { TabType } from './components/Navigation';
+import LandingView from './components/LandingView';
 import OnboardingFlow from './components/OnboardingFlow';
 import DashboardView from './components/DashboardView';
 import PatientsView from './components/PatientsView';
@@ -52,9 +53,10 @@ export default function App() {
   const [userRole, setUserRole] = useState<UserRole>('caregiver');
   const [userEmail, setUserEmail] = useState<string>('dr.smith@medlab.org');
   const [userName, setUserName] = useState<string>('Dr. Sarah Smith');
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
 
-  // Navigation
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  // Navigation - Default to Landing Page
+  const [activeTab, setActiveTab] = useState<TabType>('landing');
 
   // Multi-patient Data
   const [patients, setPatients] = useState<PatientUser[]>(MOCK_PATIENTS);
@@ -131,10 +133,22 @@ export default function App() {
     setUserRole(user.role);
     setUserName(user.name);
     setIsAuthenticated(true);
+    setShowAuthModal(false);
+    setActiveTab('dashboard');
+  };
+
+  const handleLaunchPortal = (role?: 'caregiver' | 'patient') => {
+    if (role) setUserRole(role);
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+    } else {
+      setActiveTab('dashboard');
+    }
   };
 
   const handleSignOut = () => {
     setIsAuthenticated(false);
+    setActiveTab('landing');
   };
 
   const handleSelectPatient = (patientId: string) => {
@@ -408,116 +422,137 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  if (!isAuthenticated) {
-    return <OnboardingFlow onComplete={handleAuthComplete} />;
-  }
-
   const unreadNotificationCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="bg-[#f8f9ff] text-[#0f1c2d] min-h-screen font-sans flex flex-col antialiased">
+    <div className="bg-[#f8f9ff] text-[#0f1c2d] min-h-screen font-sans flex flex-col antialiased relative">
       
       {/* Top Navigation */}
       <Navigation 
         currentTab={activeTab} 
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          if (tab !== 'landing' && !isAuthenticated) {
+            setShowAuthModal(true);
+          } else {
+            setActiveTab(tab);
+          }
+        }}
         unreadNotificationCount={unreadNotificationCount}
         currentPatientName={currentPatient?.full_name || 'No Patient Selected'}
         userRole={userRole}
       />
 
+      {/* Auth Modal Overlay */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 bg-[#0f1c2d]/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#c3c6d5]">
+            <button 
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-black font-extrabold text-sm z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer"
+            >
+              ✕
+            </button>
+            <OnboardingFlow onComplete={handleAuthComplete} />
+          </div>
+        </div>
+      )}
+
       {/* Main Stage */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 md:px-8 py-6">
-        
-        {activeTab === 'dashboard' && (
-          <DashboardView 
-            currentPatient={currentPatient}
-            device={device}
-            medications={medications}
-            schedules={schedules}
-            vitals={vitals}
-            activityLogs={activityLogs}
-            onNavigateTab={setActiveTab}
-            onSendCommand={handleSendCommand}
-            onUpdateVitals={(newVitals) => setVitals(prev => ({ ...prev, ...newVitals }))}
-          />
-        )}
+      {activeTab === 'landing' ? (
+        <LandingView onLaunchPortal={handleLaunchPortal} />
+      ) : (
+        <main className="flex-grow max-w-7xl w-full mx-auto px-4 md:px-8 py-6">
+          
+          {activeTab === 'dashboard' && (
+            <DashboardView 
+              currentPatient={currentPatient}
+              device={device}
+              medications={medications}
+              schedules={schedules}
+              vitals={vitals}
+              activityLogs={activityLogs}
+              onNavigateTab={setActiveTab}
+              onSendCommand={handleSendCommand}
+              onUpdateVitals={(newVitals) => setVitals(prev => ({ ...prev, ...newVitals }))}
+            />
+          )}
 
-        {activeTab === 'patients' && (
-          <PatientsView 
-            patients={patients}
-            selectedPatientId={selectedPatientId}
-            onSelectPatient={handleSelectPatient}
-            onEnrolPatient={handleEnrolPatient}
-            onUpdatePatient={handleUpdatePatient}
-            onDeletePatient={handleDeletePatient}
-          />
-        )}
+          {activeTab === 'patients' && (
+            <PatientsView 
+              patients={patients}
+              selectedPatientId={selectedPatientId}
+              onSelectPatient={handleSelectPatient}
+              onEnrolPatient={handleEnrolPatient}
+              onUpdatePatient={handleUpdatePatient}
+              onDeletePatient={handleDeletePatient}
+            />
+          )}
 
-        {activeTab === 'medications' && (
-          <MedicationsView 
-            medications={medications}
-            schedules={schedules}
-            patientId={selectedPatientId}
-            isCaregiver={userRole === 'caregiver'}
-            onCreateMedication={handleCreateMedication}
-            onDeleteMedication={handleDeleteMedication}
-            onCreateSchedule={handleCreateSchedule}
-            onDeleteSchedule={handleDeleteSchedule}
-            onForceSyncSchedule={handleForceSyncSchedule}
-          />
-        )}
+          {activeTab === 'medications' && (
+            <MedicationsView 
+              medications={medications}
+              schedules={schedules}
+              patientId={selectedPatientId}
+              isCaregiver={userRole === 'caregiver'}
+              onCreateMedication={handleCreateMedication}
+              onDeleteMedication={handleDeleteMedication}
+              onCreateSchedule={handleCreateSchedule}
+              onDeleteSchedule={handleDeleteSchedule}
+              onForceSyncSchedule={handleForceSyncSchedule}
+            />
+          )}
 
-        {activeTab === 'adherence' && (
-          <AdherenceView 
-            dispenseLogs={dispenseLogs}
-            videos={videos}
-            patientName={currentPatient?.full_name || 'Patient'}
-            onExportCSV={handleExportCSV}
-          />
-        )}
+          {activeTab === 'adherence' && (
+            <AdherenceView 
+              dispenseLogs={dispenseLogs}
+              videos={videos}
+              patientName={currentPatient?.full_name || 'Patient'}
+              onExportCSV={handleExportCSV}
+            />
+          )}
 
-        {activeTab === 'hardware' && (
-          <HardwareView 
-            device={device}
-            telemetry={telemetry}
-            patientName={currentPatient?.full_name || 'Patient'}
-            onAssignDevice={handleAssignDevice}
-            onSendCommand={handleSendCommand}
-            onRefreshDevice={loadPatientDetails}
-            isCaregiver={userRole === 'caregiver'}
-          />
-        )}
+          {activeTab === 'hardware' && (
+            <HardwareView 
+              device={device}
+              telemetry={telemetry}
+              patientName={currentPatient?.full_name || 'Patient'}
+              onAssignDevice={handleAssignDevice}
+              onSendCommand={handleSendCommand}
+              onRefreshDevice={loadPatientDetails}
+              isCaregiver={userRole === 'caregiver'}
+            />
+          )}
 
-        {activeTab === 'ai_assistant' && (
-          <AiAssistantView 
-            onAskQuestion={handleAskQuestion}
-            onAskVoice={handleAskVoice}
-            knowledgeDocs={knowledgeDocs}
-            onUploadDoc={handleUploadKnowledge}
-            onReingest={handleReingestKnowledge}
-            isCaregiver={userRole === 'caregiver'}
-          />
-        )}
+          {activeTab === 'ai_assistant' && (
+            <AiAssistantView 
+              onAskQuestion={handleAskQuestion}
+              onAskVoice={handleAskVoice}
+              knowledgeDocs={knowledgeDocs}
+              onUploadDoc={handleUploadKnowledge}
+              onReingest={handleReingestKnowledge}
+              isCaregiver={userRole === 'caregiver'}
+            />
+          )}
 
-        {activeTab === 'notifications' && (
-          <NotificationsView 
-            notifications={notifications}
-            onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
-          />
-        )}
+          {activeTab === 'notifications' && (
+            <NotificationsView 
+              notifications={notifications}
+              onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+            />
+          )}
 
-        {activeTab === 'settings' && (
-          <SettingsView 
-            settings={settings}
-            userRole={userRole}
-            userEmail={userEmail}
-            onUpdateSettings={(newSettings) => setSettings(prev => ({ ...prev, ...newSettings }))}
-            onSignOut={handleSignOut}
-          />
-        )}
+          {activeTab === 'settings' && (
+            <SettingsView 
+              settings={settings}
+              userRole={userRole}
+              userEmail={userEmail}
+              onUpdateSettings={(newSettings) => setSettings(prev => ({ ...prev, ...newSettings }))}
+              onSignOut={handleSignOut}
+            />
+          )}
 
-      </main>
+        </main>
+      )}
 
       {/* Persistent Clinical Footer */}
       <footer className="bg-white border-t border-[#c3c6d5] py-4 px-6 md:px-8 text-xs text-[#737784] flex flex-col sm:flex-row justify-between items-center gap-2">
