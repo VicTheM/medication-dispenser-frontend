@@ -8,10 +8,8 @@ import {
   Users, 
   Video, 
   Wifi, 
-  CheckCircle2, 
   AlertTriangle, 
   ArrowRight, 
-  Play, 
   Sparkles, 
   Lock, 
   FileText, 
@@ -31,8 +29,6 @@ interface LandingViewProps {
 
 export default function LandingView({ onLaunchPortal }: LandingViewProps) {
   const [activeSlot, setActiveSlot] = useState<number>(0);
-  const [simulatedDispensing, setSimulatedDispensing] = useState<boolean>(false);
-  const [dispenseLog, setDispenseLog] = useState<string | null>(null);
 
   const slotData = [
     { slot: 1, day: 'Monday', med: 'Lisinopril 10mg + Metformin 500mg', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
@@ -44,19 +40,6 @@ export default function LandingView({ onLaunchPortal }: LandingViewProps) {
     { slot: 7, day: 'Sunday', med: 'Lisinopril 10mg + Multi-Vitamin', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
   ];
 
-  const handleSimulateDispense = () => {
-    setSimulatedDispensing(true);
-    setDispenseLog('Rotating Carousel Stepper Motor to Compartment ' + (activeSlot + 1) + '...');
-    
-    setTimeout(() => {
-      setDispenseLog('Optocoupler confirmed alignment. Actuating Solenoid Gate...');
-    }, 1200);
-
-    setTimeout(() => {
-      setDispenseLog('Acoustic Sensor verified pill drop. Video clip #DISP-8842 recorded (5.2s).');
-      setSimulatedDispensing(false);
-    }, 2600);
-  };
 
   return (
     <div className="min-h-screen bg-[#f8f9ff] text-[#0f1c2d] flex flex-col font-sans antialiased">
@@ -143,7 +126,6 @@ export default function LandingView({ onLaunchPortal }: LandingViewProps) {
                 </div>
               </div>
 
-              {/* Simulated Hardware LCD Screen */}
               <div className="bg-[#0f1c2d] text-emerald-400 p-4 rounded-xl font-mono text-xs mb-5 shadow-inner border border-emerald-900/50 relative overflow-hidden">
                 <div className="absolute top-2 right-2 text-[9px] text-emerald-500/80 uppercase font-sans font-bold">LCD Display (20x4)</div>
                 <div className="flex justify-between items-center text-[11px] text-white/90 border-b border-emerald-900/40 pb-1 mb-2">
@@ -186,30 +168,12 @@ export default function LandingView({ onLaunchPortal }: LandingViewProps) {
               {/* Dispense Action Control */}
               <div className="space-y-3">
                 <button
-                  onClick={handleSimulateDispense}
-                  disabled={simulatedDispensing}
-                  className="w-full bg-[#006d37] hover:bg-[#004d25] disabled:bg-gray-400 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  onClick={() => onLaunchPortal('caregiver')}
+                  className="w-full bg-[#006d37] hover:bg-[#004d25] text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
                 >
-                  {simulatedDispensing ? (
-                    <>
-                      <Zap className="w-4 h-4 animate-spin text-white" />
-                      <span>Actuating Stepper Motor...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>Simulate Dispense Trigger (Slot #{activeSlot + 1})</span>
-                    </>
-                  )}
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Launch Caregiver Portal</span>
                 </button>
-
-                {/* Live Hardware Feedback Log */}
-                {dispenseLog && (
-                  <div className="bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-[11px] font-mono text-gray-700 flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>{dispenseLog}</span>
-                  </div>
-                )}
               </div>
 
             </div>

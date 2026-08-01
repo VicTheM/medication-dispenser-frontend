@@ -9,8 +9,7 @@ import {
   EyeOff, 
   ShieldCheck,
   UserCheck,
-  Users,
-  Sparkles
+  Users
 } from 'lucide-react';
 
 interface OnboardingFlowProps {
@@ -21,9 +20,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [role, setRole] = useState<UserRole>('caregiver');
   
-  const [email, setEmail] = useState('dr.smith@medlab.org');
-  const [password, setPassword] = useState('password123');
-  const [fullName, setFullName] = useState('Dr. Sarah Smith');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -71,30 +70,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         }
       }
     } catch (err: any) {
-      // Demo fallback
-      onComplete({
-        email: email || 'dr.smith@medlab.org',
-        role,
-        name: fullName || (role === 'caregiver' ? 'Dr. Sarah Smith' : 'Eleanor Vance'),
-      });
+      setErrorMsg(err?.message || 'Authentication failed. Please verify credentials or backend connection.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleDemoSignIn = (demoRole: UserRole) => {
-    if (demoRole === 'caregiver') {
-      onComplete({
-        email: 'dr.smith@medlab.org',
-        role: 'caregiver',
-        name: 'Dr. Sarah Smith (Lead Clinician)',
-      });
-    } else {
-      onComplete({
-        email: 'eleanor.vance@patient.medlab.org',
-        role: 'patient',
-        name: 'Eleanor Vance (Patient)',
-      });
     }
   };
 
@@ -119,28 +97,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <p className="text-[#434652] text-xs">Sign in or register to manage 7-compartment hardware dispensers and patient adherence schedules.</p>
           </div>
 
-          {/* Quick Demo Access Bar */}
-          <div className="mb-6 p-4 bg-[#eff4ff] border border-[#003482]/20 rounded-xl space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-[#003482]">
-              <Sparkles className="w-4 h-4 fill-[#003482]" />
-              Quick Demo Access Mode
-            </div>
-            <p className="text-[11px] text-[#434652]">Bypass authentication instantly with preset demo credentials:</p>
-            <div className="flex gap-2 pt-1">
-              <button 
-                onClick={() => handleDemoSignIn('caregiver')}
-                className="flex-1 py-1.5 bg-[#003482] text-white rounded font-bold text-xs hover:bg-[#0c4aac] transition-all cursor-pointer shadow-xs"
-              >
-                Caregiver Demo Portal
-              </button>
-              <button 
-                onClick={() => handleDemoSignIn('patient')}
-                className="flex-1 py-1.5 bg-white text-[#003482] border border-[#003482] rounded font-bold text-xs hover:bg-gray-50 transition-all cursor-pointer"
-              >
-                Patient Demo Portal
-              </button>
-            </div>
-          </div>
 
           {/* Main Auth Form */}
           <div className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-5">

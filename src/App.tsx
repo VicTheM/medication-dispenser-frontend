@@ -16,23 +16,8 @@ import {
   UserRole
 } from './types';
 
-import { 
-  MOCK_PATIENTS, 
-  MOCK_DEVICE, 
-  MOCK_MEDICATIONS, 
-  MOCK_SCHEDULES, 
-  MOCK_DISPENSE_LOGS, 
-  MOCK_VIDEOS, 
-  MOCK_TELEMETRY, 
-  MOCK_VOICE_INTERACTIONS, 
-  MOCK_NOTIFICATIONS, 
-  MOCK_KNOWLEDGE, 
-  INITIAL_VITALS, 
-  INITIAL_ACTIVITY_LOGS, 
-  INITIAL_SETTINGS 
-} from './mockData';
-
 import { api } from './lib/api';
+import { INITIAL_VITALS, INITIAL_ACTIVITY_LOGS, INITIAL_SETTINGS } from './lib/constants';
 
 // Components
 import Navigation, { TabType } from './components/Navigation';
@@ -49,35 +34,35 @@ import SettingsView from './components/SettingsView';
 
 export default function App() {
   // Authentication & Session
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole>('caregiver');
-  const [userEmail, setUserEmail] = useState<string>('dr.smith@medlab.org');
-  const [userName, setUserName] = useState<string>('Dr. Sarah Smith');
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
 
   // Navigation
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   // Multi-patient Data
-  const [patients, setPatients] = useState<PatientUser[]>(MOCK_PATIENTS);
-  const [selectedPatientId, setSelectedPatientId] = useState<string>(MOCK_PATIENTS[0].id);
+  const [patients, setPatients] = useState<PatientUser[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string>('');
 
   // Patient-specific state
-  const [device, setDevice] = useState<DeviceStatus | null>(MOCK_DEVICE);
-  const [medications, setMedications] = useState<MedicationRecord[]>(MOCK_MEDICATIONS);
-  const [schedules, setSchedules] = useState<ScheduleRecord[]>(MOCK_SCHEDULES);
-  const [dispenseLogs, setDispenseLogs] = useState<DispenseEventRecord[]>(MOCK_DISPENSE_LOGS);
-  const [videos, setVideos] = useState<AdherenceVideoRecord[]>(MOCK_VIDEOS);
-  const [telemetry, setTelemetry] = useState<TelemetryRecord[]>(MOCK_TELEMETRY);
-  const [voiceInteractions, setVoiceInteractions] = useState<VoiceInteractionRecord[]>(MOCK_VOICE_INTERACTIONS);
-  const [notifications, setNotifications] = useState<NotificationRecord[]>(MOCK_NOTIFICATIONS);
-  const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocRecord[]>(MOCK_KNOWLEDGE);
+  const [device, setDevice] = useState<DeviceStatus | null>(null);
+  const [medications, setMedications] = useState<MedicationRecord[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleRecord[]>([]);
+  const [dispenseLogs, setDispenseLogs] = useState<DispenseEventRecord[]>([]);
+  const [videos, setVideos] = useState<AdherenceVideoRecord[]>([]);
+  const [telemetry, setTelemetry] = useState<TelemetryRecord[]>([]);
+  const [voiceInteractions, setVoiceInteractions] = useState<VoiceInteractionRecord[]>([]);
+  const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
+  const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocRecord[]>([]);
 
   // App vitals & settings
   const [vitals, setVitals] = useState<Vitals>(INITIAL_VITALS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(INITIAL_ACTIVITY_LOGS);
   const [settings, setSettings] = useState<ClinicalSettings>(INITIAL_SETTINGS);
 
-  const currentPatient = patients.find(p => p.id === selectedPatientId) || patients[0] || null;
+  const currentPatient = patients.find(p => p.id === selectedPatientId) || null;
 
   // Sync settings API Base URL with API client
   useEffect(() => {
@@ -86,45 +71,53 @@ export default function App() {
 
   // Initial backend data load
   useEffect(() => {
-    if (!settings.useRealApi) return;
-
     async function loadBackendData() {
       try {
         const pRes = await api.listPatients();
         if (pRes.data && pRes.data.length > 0) {
           setPatients(pRes.data);
+          setSelectedPatientId(pRes.data[0].id);
         }
       } catch (err) {
-        console.warn('Real API unavailable, using local mock data.', err);
+        console.error('Failed to load patients from API.', err);
       }
     }
     loadBackendData();
-  }, [settings.useRealApi]);
+  }, []);
 
   // Load patient details function
   const loadPatientDetails = async () => {
-    if (!selectedPatientId || !settings.useRealApi) return;
+    if (!selectedPatientId) return;
     try {
-      const [medsRes, schsRes, devRes, dispsRes, notifsRes] = await Promise.all([
+      const [medsRes, schsRes, devRes, dispsRes, notifsRes, videosRes, telemetryRes, voiceRes, docsRes] = await Promise.all([
         api.listMedications(selectedPatientId),
         api.listSchedules(selectedPatientId),
         api.getPatientDevice(selectedPatientId),
         api.listDispenseLogs(selectedPatientId),
-        api.listNotifications(selectedPatientId)
+        api.listNotifications(selectedPatientId),
+        api.listAdherenceVideos(selectedPatientId),
+        api.listTelemetry(selectedPatientId),
+        api.listVoiceInteractions(selectedPatientId),
+        api.listKnowledgeDocs()
       ]);
+
       if (medsRes.data) setMedications(medsRes.data);
       if (schsRes.data) setSchedules(schsRes.data);
       if (devRes.data) setDevice(devRes.data);
       if (dispsRes.data) setDispenseLogs(dispsRes.data);
       if (notifsRes.data) setNotifications(notifsRes.data);
-    } catch (e) {
-      console.warn('Using local patient data fallback');
+      if (videosRes.data) setVideos(videosRes.data);
+      if (telemetryRes.data) setTelemetry(telemetryRes.data);
+      if (voiceRes.data) setVoiceInteractions(voiceRes.data);
+      if (docsRes.data) setKnowledgeDocs(docsRes.data);
+    } catch (err) {
+      console.error('Failed to load patient details from API.', err);
     }
   };
 
   useEffect(() => {
     loadPatientDetails();
-  }, [selectedPatientId, settings.useRealApi]);
+  }, [selectedPatientId]);
 
   // Auth Handler
   const handleAuthComplete = (user: { email: string; role: UserRole; name: string }) => {
@@ -151,37 +144,21 @@ export default function App() {
 
   const handleEnrolPatient = async (patient: Partial<PatientUser>) => {
     try {
-      if (settings.useRealApi) {
-        const res = await api.enrolPatient({
-          full_name: patient.full_name || 'New Patient',
-          date_of_birth: patient.date_of_birth,
-          phone: patient.phone,
-          email: patient.email,
-          notes: patient.notes,
-          timezone: 'America/New_York'
-        });
-        if (res.data) {
-          setPatients(prev => [res.data!, ...prev]);
-          setSelectedPatientId(res.data.id);
-        } else if (res.error) {
-          alert(`Enrollment error: ${res.error}`);
-        }
-      } else {
-        const mockP: PatientUser = {
-          id: `pat-${Date.now().toString().slice(-4)}`,
-          caregiver_id: 'cg-001',
-          full_name: patient.full_name || 'New Patient',
-          date_of_birth: patient.date_of_birth || '1960-01-01',
-          phone: patient.phone || '',
-          email: patient.email || '',
-          notes: patient.notes || '',
-          timezone: 'America/New_York',
-          created_at: new Date().toISOString()
-        };
-        setPatients(prev => [mockP, ...prev]);
-        setSelectedPatientId(mockP.id);
+      const res = await api.enrolPatient({
+        full_name: patient.full_name || 'New Patient',
+        date_of_birth: patient.date_of_birth,
+        phone: patient.phone,
+        email: patient.email,
+        notes: patient.notes,
+        timezone: patient.timezone || 'America/New_York'
+      });
+      if (res.data) {
+        setPatients(prev => [res.data!, ...prev]);
+        setSelectedPatientId(res.data.id);
+        alert(`Patient ${res.data.full_name} enrolled successfully.`);
+      } else if (res.error) {
+        alert(`Enrollment error: ${res.error}`);
       }
-      alert(`Patient ${patient.full_name} enrolled successfully.`);
     } catch (err: any) {
       alert(`Enrollment failed: ${err.message}`);
     }
@@ -189,13 +166,9 @@ export default function App() {
 
   const handleUpdatePatient = async (patientId: string, data: Partial<PatientUser>) => {
     try {
-      if (settings.useRealApi) {
-        const res = await api.updatePatient(patientId, data);
-        if (res.data) {
-          setPatients(prev => prev.map(p => p.id === patientId ? res.data! : p));
-        }
-      } else {
-        setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...data } : p));
+      const res = await api.updatePatient(patientId, data);
+      if (res.data) {
+        setPatients(prev => prev.map(p => p.id === patientId ? res.data! : p));
       }
       alert('Patient details updated.');
     } catch (e: any) {
@@ -206,9 +179,7 @@ export default function App() {
   const handleDeletePatient = async (patientId: string) => {
     if (!confirm('Are you sure you want to remove this patient from your roster?')) return;
     try {
-      if (settings.useRealApi) {
-        await api.deletePatient(patientId);
-      }
+      await api.deletePatient(patientId);
       setPatients(prev => prev.filter(p => p.id !== patientId));
       if (selectedPatientId === patientId) {
         const remaining = patients.filter(p => p.id !== patientId);
@@ -221,31 +192,13 @@ export default function App() {
 
   // Medication handlers
   const handleCreateMedication = async (data: { name: string; dosage?: string; form?: string; instructions?: string; prescribing_doctor?: string }) => {
-    if (settings.useRealApi) {
-      const res = await api.createMedication(selectedPatientId, data);
-      if (res.data) setMedications(prev => [res.data!, ...prev]);
-      return res;
-    } else {
-      const mockMed: MedicationRecord = {
-        id: `med-${Date.now()}`,
-        patient_id: selectedPatientId,
-        name: data.name,
-        dosage: data.dosage || '10mg',
-        form: data.form || 'Tablet',
-        instructions: data.instructions || '',
-        prescribing_doctor: data.prescribing_doctor || userName,
-        active: true,
-        created_at: new Date().toISOString()
-      };
-      setMedications(prev => [mockMed, ...prev]);
-      return { data: mockMed };
-    }
+    const res = await api.createMedication(selectedPatientId, data);
+    if (res.data) setMedications(prev => [res.data!, ...prev]);
+    return res;
   };
 
   const handleDeleteMedication = async (medicationId: string) => {
-    if (settings.useRealApi) {
-      await api.deleteMedication(medicationId);
-    }
+    await api.deleteMedication(medicationId);
     setMedications(prev => prev.filter(m => m.id !== medicationId));
   };
 
@@ -259,146 +212,62 @@ export default function App() {
     start_date?: string;
     end_date?: string;
   }) => {
-    if (settings.useRealApi) {
-      const res = await api.createSchedule(selectedPatientId, data);
-      if (res.data) {
-        setSchedules(prev => prev.map(s => s.compartment === res.data!.compartment ? res.data! : s));
-      }
-      return res;
-    } else {
-      const updatedSch: ScheduleRecord = {
-        id: `sch-${data.compartment}`,
-        patient_id: selectedPatientId,
-        compartment: data.compartment,
-        dispense_time: data.dispense_time,
-        frequency: data.frequency || 'daily',
-        days_of_week: data.days_of_week || [],
-        start_date: data.start_date || new Date().toISOString().slice(0, 10),
-        end_date: data.end_date || null,
-        active: true,
-        medication_ids: data.medication_ids,
-        medication_names: data.medication_ids.map(id => medications.find(m => m.id === id)?.name || id),
-        updated_at: new Date().toISOString()
-      };
-      setSchedules(prev => prev.map(s => s.compartment === data.compartment ? updatedSch : s));
-      return { data: updatedSch };
+    const res = await api.createSchedule(selectedPatientId, data);
+    if (res.data) {
+      setSchedules(prev => prev.map(s => s.compartment === res.data!.compartment ? res.data! : s));
     }
+    return res;
   };
 
   const handleDeleteSchedule = async (scheduleId: string) => {
-    if (settings.useRealApi) {
-      await api.deleteSchedule(scheduleId);
-    }
+    await api.deleteSchedule(scheduleId);
     setSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, active: false } : s));
   };
 
   const handleForceSyncSchedule = async () => {
-    if (settings.useRealApi) {
-      const res = await api.forceSyncSchedule(selectedPatientId);
-      alert('Schedules forcibly synchronized to ESP32 dispenser.');
-      return res;
-    } else {
-      alert('Local demo mode: Schedules synchronized to dispenser memory.');
-      return { status: 'synced' };
-    }
+    const res = await api.forceSyncSchedule(selectedPatientId);
+    alert('Schedules forcibly synchronized to ESP32 dispenser.');
+    return res;
   };
 
   // Hardware Device handlers
   const handleAssignDevice = async (deviceUid: string) => {
-    if (settings.useRealApi) {
-      const res = await api.assignDevice(selectedPatientId, deviceUid);
-      if (res.data) {
-        setDevice({
-          id: res.data.id,
-          device_uid: res.data.device_uid,
-          patient_id: selectedPatientId,
-          status: 'online',
-          battery_level: 95,
-          firmware_version: 'v3.1.2-esp32'
-        });
-      }
-    } else {
-      setDevice(prev => prev ? { ...prev, device_uid: deviceUid } : {
-        id: `dev-${Date.now()}`,
-        device_uid: deviceUid,
-        patient_id: selectedPatientId,
-        status: 'online',
-        battery_level: 90
-      });
+    const res = await api.assignDevice(selectedPatientId, deviceUid);
+    if (res.data) {
+      setDevice(res.data);
+      alert(`Hardware Dispenser UID ${res.data.device_uid} assigned to patient.`);
+      return res.data;
     }
-    alert(`Hardware Dispenser UID ${deviceUid} assigned to patient.`);
+    throw new Error(res.error || 'Failed to assign device.');
   };
 
   const handleSendCommand = async (deviceUid: string, commandType: string, payload?: Record<string, any>) => {
-    if (settings.useRealApi) {
-      const result = await api.sendDeviceCommand(deviceUid, commandType, payload);
-      alert(`Hardware Command sent: ${result.data?.status || 'Success'}`);
-      return result;
-    } else {
-      const newLog: ActivityLog = {
-        id: `act-${Date.now()}`,
-        timestamp: 'Just now',
-        text: `Command [${commandType}] executed on Hardware ${deviceUid}.`,
-        type: 'dispense'
-      };
-      setActivityLogs(prev => [newLog, ...prev]);
-      return { data: { status: 'sent', command: commandType } };
-    }
+    const result = await api.sendDeviceCommand(deviceUid, commandType, payload);
+    alert(`Hardware Command sent: ${result.data?.status || 'Success'}`);
+    return result;
   };
 
   // AI Assistant handlers
   const handleAskQuestion = async (question: string) => {
-    if (settings.useRealApi) {
-      const res = await api.askAiQuestion(question);
-      if (res.data) return res.data;
-      throw new Error(res.error || 'AI Query Failed');
-    } else {
-      return {
-        answer: `Ally AI Response: Based on ${currentPatient?.full_name || 'the patient'}'s profile and active 7-compartment dispenser records, take Lisinopril 10mg in the morning (Compartment A) with water. No severe interactions detected with Metformin in Compartment B.`,
-        citations: [{ doc: 'Hypertension_Care_Plan_2026.pdf', page: 2 }],
-        tool_results: [{ action: 'check_compartment_schedule', compartment: 'A' }]
-      };
-    }
+    const res = await api.askAiQuestion(question);
+    if (res.data) return res.data;
+    throw new Error(res.error || 'AI Query Failed');
   };
 
   const handleAskVoice = async (audioBlob: Blob) => {
-    if (settings.useRealApi) {
-      const res = await api.askAiVoice(audioBlob);
-      if (res.data) return res.data;
-      throw new Error(res.error || 'Voice AI Query Failed');
-    } else {
-      return {
-        transcript: "When is my next dose of Lisinopril scheduled?",
-        answer_text: "Your next dose of Lisinopril (10mg) is scheduled in Compartment A for 08:00 AM tomorrow morning.",
-        citations: [{ doc: 'Eleanor_Vance_Clinical_Care_Plan_2026.pdf', page: 1 }]
-      };
-    }
+    const res = await api.askAiVoice(audioBlob);
+    if (res.data) return res.data;
+    throw new Error(res.error || 'Voice AI Query Failed');
   };
 
   const handleUploadKnowledge = async (file: File) => {
-    if (settings.useRealApi) {
-      const res = await api.uploadKnowledgeDoc(file);
-      if (res.data) setKnowledgeDocs(prev => [res.data!, ...prev]);
-      return res;
-    } else {
-      const mockDoc: KnowledgeDocRecord = {
-        id: `kdoc-${Date.now()}`,
-        filename: file.name,
-        ingest_status: 'ingested',
-        uploaded_at: new Date().toISOString()
-      };
-      setKnowledgeDocs(prev => [mockDoc, ...prev]);
-      return { data: mockDoc };
-    }
+    const res = await api.uploadKnowledgeDoc(file);
+    if (res.data) setKnowledgeDocs(prev => [res.data!, ...prev]);
+    return res;
   };
 
   const handleReingestKnowledge = async () => {
-    if (settings.useRealApi) {
-      return await api.reingestKnowledge();
-    } else {
-      alert('Mock Knowledge documents re-indexed.');
-      return { status: 'ok' };
-    }
+    return await api.reingestKnowledge();
   };
 
   // Export CSV
@@ -446,6 +315,7 @@ export default function App() {
               device={device}
               medications={medications}
               schedules={schedules}
+              dispenseLogs={dispenseLogs}
               vitals={vitals}
               activityLogs={activityLogs}
               onNavigateTab={setActiveTab}
@@ -505,6 +375,7 @@ export default function App() {
               onAskQuestion={handleAskQuestion}
               onAskVoice={handleAskVoice}
               knowledgeDocs={knowledgeDocs}
+              voiceInteractions={voiceInteractions}
               onUploadDoc={handleUploadKnowledge}
               onReingest={handleReingestKnowledge}
               isCaregiver={userRole === 'caregiver'}

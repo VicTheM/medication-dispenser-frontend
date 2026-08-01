@@ -23,6 +23,7 @@ interface AiAssistantViewProps {
   onAskQuestion: (question: string) => Promise<{ answer: string; citations?: any[]; tool_results?: any[] }>;
   onAskVoice: (audioBlob: Blob) => Promise<{ transcript?: string; answer_text?: string; audio_base64?: string; citations?: any[] }>;
   knowledgeDocs: KnowledgeDocRecord[];
+  voiceInteractions: VoiceInteractionRecord[];
   onUploadDoc: (file: File) => Promise<any>;
   onReingest: () => Promise<any>;
   isCaregiver: boolean;
@@ -32,6 +33,7 @@ export default function AiAssistantView({
   onAskQuestion,
   onAskVoice,
   knowledgeDocs,
+  voiceInteractions,
   onUploadDoc,
   onReingest,
   isCaregiver,
@@ -62,6 +64,8 @@ export default function AiAssistantView({
   const [isReingesting, setIsReingesting] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const recentVoiceInteractions = voiceInteractions.slice(0, 6);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -339,6 +343,29 @@ export default function AiAssistantView({
               </div>
             )}
             <div ref={messagesEndRef} />
+          </div>
+
+          <div className="border-t border-[#c3c6d5] px-4 py-4 bg-[#f8f9ff] text-xs">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-bold text-[#003482]">Recent Voice Interactions</span>
+              <span className="text-[#737784]">{voiceInteractions.length} total</span>
+            </div>
+            {recentVoiceInteractions.length > 0 ? (
+              <div className="grid gap-3">
+                {recentVoiceInteractions.map((interaction) => (
+                  <div key={interaction.id} className="bg-white border border-[#dce9ff] rounded-xl p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[11px] font-bold text-[#0f1c2d]">{new Date(interaction.created_at).toLocaleString()}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-[#737784]">{interaction.audio_format || 'wav'}</span>
+                    </div>
+                    <p className="text-[11px] text-[#434652] mt-2">Transcript: {interaction.transcript || 'No transcript available.'}</p>
+                    <p className="text-[11px] text-[#0f1c2d] font-semibold mt-1">Assistant: {interaction.answer_text || 'No answer returned.'}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-[#737784]">No voice interactions have been recorded yet.</p>
+            )}
           </div>
 
           {/* Chat Input Bar */}

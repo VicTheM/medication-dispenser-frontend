@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DispenseEventRecord, AdherenceVideoRecord } from '../types';
 import { 
   BarChart3, 
@@ -32,17 +32,31 @@ export default function AdherenceView({
   const [selectedLog, setSelectedLog] = useState<DispenseEventRecord | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
+  const videoMap = useMemo(() => new Map(videos.map((video) => [video.dispense_event_id, video])), [videos]);
+  const selectedVideo = selectedLog ? videoMap.get(selectedLog.id) : null;
+
   const handleExportClick = () => {
     onExportCSV();
     alert(`MedLab Adherence Logs for ${patientName} exported to CSV.`);
   };
 
   // Calculate adherence rate
-  const totalCount = dispenseLogs.length || 1;
+  const totalCount = dispenseLogs.length;
   const successCount = dispenseLogs.filter(l => l.status === 'success').length;
-  const adherenceScore = Math.round((successCount / totalCount) * 100) || 92;
+  const adherenceScore = totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0;
 
   const WEEK_DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const dayCounts = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    const jsDayToIndex = [6, 0, 1, 2, 3, 4, 5];
+    dispenseLogs.forEach((log) => {
+      const date = new Date(log.dispensed_at);
+      const idx = jsDayToIndex[date.getDay()];
+      if (idx != null) counts[idx] += 1;
+    });
+    return counts;
+  }, [dispenseLogs]);
+  const maxDayCount = Math.max(...dayCounts, 1);
 
   return (
     <div id="adherence-tab-panel" className="space-y-6">
@@ -77,13 +91,13 @@ export default function AdherenceView({
         {/* Weekly Bar Chart */}
         <div className="h-52 bg-[#f8f9ff] border border-[#c3c6d5] rounded-lg relative flex items-end justify-between p-6 pt-10 gap-3 overflow-hidden">
           {WEEK_DAYS.map((day, idx) => {
-            const isPending = idx === 6;
-            const heightPct = isPending ? 30 : idx === 2 ? 60 : 95;
+            const count = dayCounts[idx];
+            const heightPct = count > 0 ? Math.max(18, Math.round((count / maxDayCount) * 100)) : 18;
             return (
               <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end relative group cursor-pointer">
                 <div 
                   className={`w-full max-w-[44px] rounded-t transition-all duration-500 ${
-                    isPending 
+                    count === 0 
                       ? 'border border-dashed border-[#c3c6d5] bg-[#eff4ff]' 
                       : idx === 2 ? 'bg-amber-600' : 'bg-[#003482]'
                   }`}
@@ -173,37 +187,26 @@ export default function AdherenceView({
             </div>
 
             <div className="bg-black aspect-video w-full relative flex items-center justify-center overflow-hidden">
-              <img 
-                alt="Video Log Frame" 
-                src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                className="absolute inset-0 w-full h-full object-cover opacity-70"
-              />
-
-              {isVideoPlaying ? (
-                <div className="absolute inset-0 bg-transparent flex items-center justify-center text-white p-4">
-                  <div className="absolute top-3 left-3 bg-[#ba1a1a] text-white text-[10px] font-bold px-2 py-0.5 rounded animate-pulse uppercase">
-                    • RECORDED STREAM PLAYBACK
-                  </div>
-                  <div className="border-2 border-dashed border-[#91f8ad] w-48 h-48 animate-pulse rounded flex items-end p-2">
-                    <span className="text-[9px] font-bold bg-[#00743b] text-white px-1.5 py-0.5 rounded">
-                      FACE & PILL DETECTED
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => setIsVideoPlaying(true)}
-                  className="w-14 h-14 bg-[#003482]/90 hover:bg-[#003482] rounded-full flex items-center justify-center text-white cursor-pointer shadow-lg"
-                >
-                  <Play className="w-7 h-7 fill-white ml-1" />
-                </button>
-              )}
-
-              <div className="absolute bottom-3 left-3 bg-[#91f8ad] text-[#00743b] px-3 py-1 rounded text-xs font-bold flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4" />
-                Person Presence & Pill Swallowed Verified
-              </div>
-            </div>
+                  {selectedVideo ? (
+                    <div className="w-full p-4 text-white text-center">
+                      <p className="text-sm font-bold mb-2">Video ready for playback</p>
+                      <p className="text-[11px] mb-3">Duration: {selectedVideo.duration_seconds}s · Person detected: {selectedVideo.person_detected ? 'Yes' : 'No'}</p>
+                      <a 
+                        href={selectedVideo.file_path.startsWith('http') ? selectedVideo.file_path : `${window.location.origin}${selectedVideo.file_path}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#91f8ad] text-[#003482] rounded-lg text-xs font-bold hover:bg-[#76e593]"
+                      >
+                        <Video className="w-4 h-4" />
+                        Open Video File
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="w-full p-4 text-white text-center">
+                      <p className="text-sm font-bold mb-2">Video metadata not available</p>
+                      <p className="text-[11px]">This dispense event has no linked video file in the current backend response.</p>
+                    </div>
+                  )}
 
             <div className="p-4 bg-[#f8f9ff] border-t border-[#c3c6d5] flex justify-end">
               <button 
@@ -217,6 +220,35 @@ export default function AdherenceView({
         </div>
       )}
 
+      {videos.length > 0 && (
+        <section className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-[#0f1c2d]">Adherence Video Library</h3>
+              <p className="text-xs text-[#737784]">Recorded device videos for dispense events.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            {videos.map((video) => (
+              <div key={video.id} className="bg-[#f8f9ff] border border-[#c3c6d5] rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-[#0f1c2d]">{video.file_path.split('/').pop() || video.file_path}</p>
+                  <p className="text-[11px] text-[#737784]">Uploaded at {new Date(video.uploaded_at).toLocaleString()}</p>
+                </div>
+                <a
+                  href={video.file_path.startsWith('http') ? video.file_path : `${window.location.origin}${video.file_path}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-bold text-[#003482] hover:underline"
+                >
+                  Open video file
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

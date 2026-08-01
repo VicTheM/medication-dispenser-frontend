@@ -191,9 +191,9 @@ export default function HardwareView({
                   <Battery className="w-4 h-4 text-[#006d37]" />
                 </div>
                 <p className="text-lg font-bold text-[#0f1c2d]">
-                  {device?.battery_level ?? 88}%
+                  {device?.battery_level != null ? `${device.battery_level}%` : 'Unknown'}
                 </p>
-                <span className="text-[10px] text-[#006d37] font-semibold">Normal voltage</span>
+                <span className="text-[10px] text-[#006d37] font-semibold">Battery Level</span>
               </div>
 
               <div className="bg-[#f8f9ff] border border-[#c3c6d5] p-3 rounded-lg">
@@ -202,9 +202,9 @@ export default function HardwareView({
                   <Wifi className="w-4 h-4 text-[#003482]" />
                 </div>
                 <p className="text-xs font-bold text-[#0f1c2d] truncate font-mono">
-                  {device?.wifi_ssid || 'MedLab_5G'}
+                  {device?.wifi_ssid || 'Unavailable'}
                 </p>
-                <span className="text-[10px] text-[#737784] font-semibold">-52 dBm signal</span>
+                <span className="text-[10px] text-[#737784] font-semibold">WiFi SSID</span>
               </div>
 
               <div className="bg-[#f8f9ff] border border-[#c3c6d5] p-3 rounded-lg">
@@ -213,9 +213,9 @@ export default function HardwareView({
                   <Cpu className="w-4 h-4 text-[#003482]" />
                 </div>
                 <p className="text-xs font-bold text-[#0f1c2d] font-mono truncate">
-                  {device?.firmware_version || 'v3.1.2-esp32'}
+                  {device?.firmware_version || 'Unavailable'}
                 </p>
-                <span className="text-[10px] text-[#00743b] font-semibold">Latest release</span>
+                <span className="text-[10px] text-[#00743b] font-semibold">Firmware Version</span>
               </div>
 
               <div className="bg-[#f8f9ff] border border-[#c3c6d5] p-3 rounded-lg">
@@ -224,9 +224,9 @@ export default function HardwareView({
                   <Clock className="w-4 h-4 text-[#737784]" />
                 </div>
                 <p className="text-xs font-bold text-[#0f1c2d] font-mono">
-                  {device?.uptime_seconds ? `${Math.floor(device.uptime_seconds / 3600)}h` : '120h'}
+                  {device?.uptime_seconds ? `${Math.floor(device.uptime_seconds / 3600)}h` : 'Unavailable'}
                 </p>
-                <span className="text-[10px] text-[#737784] font-semibold">Continuous link</span>
+                <span className="text-[10px] text-[#737784] font-semibold">Uptime</span>
               </div>
             </div>
 

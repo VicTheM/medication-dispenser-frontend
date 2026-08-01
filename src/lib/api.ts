@@ -348,12 +348,13 @@ class MedAdhereApiClient {
   async askAiVoice(audioBlob: Blob, audioFormat = 'wav') {
     const formData = new FormData();
     formData.append('audio', audioBlob, `speech.${audioFormat}`);
+    formData.append('audio_format', audioFormat);
     return this.request<{
       transcript?: string;
       answer_text?: string;
       audio_base64?: string;
       citations?: any[];
-    }>(`/ai/voice-ask?audio_format=${audioFormat}`, {
+    }>('/ai/voice-ask', {
       method: 'POST',
       body: formData,
     });

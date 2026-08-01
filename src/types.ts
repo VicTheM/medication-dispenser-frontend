@@ -166,7 +166,6 @@ export interface ActivityLog {
 export interface ClinicalSettings {
   email: string;
   apiBaseUrl: string;
-  useRealApi: boolean;
   alerts: {
     emailNotifications: boolean;
     pushNotifications: boolean;

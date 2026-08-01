@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { MedicationRecord, ScheduleRecord, DeviceStatus, PatientUser, Vitals, ActivityLog } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MedicationRecord, ScheduleRecord, DeviceStatus, PatientUser, Vitals, ActivityLog, DispenseEventRecord } from '../types';
 import { 
   Clock, 
   CheckCircle2, 
@@ -19,6 +19,7 @@ interface DashboardViewProps {
   device: DeviceStatus | null;
   medications: MedicationRecord[];
   schedules: ScheduleRecord[];
+  dispenseLogs: DispenseEventRecord[];
   vitals: Vitals;
   activityLogs: ActivityLog[];
   onNavigateTab: (tab: 'dashboard' | 'patients' | 'medications' | 'adherence' | 'hardware' | 'ai_assistant' | 'notifications' | 'settings') => void;
@@ -31,25 +32,19 @@ export default function DashboardView({
   device,
   medications,
   schedules,
+  dispenseLogs,
   vitals,
   activityLogs,
   onNavigateTab,
   onSendCommand,
   onUpdateVitals,
 }: DashboardViewProps) {
-  const [secondsRemaining, setSecondsRemaining] = useState(5400); // 1h 30m countdown
+  const [secondsRemaining, setSecondsRemaining] = useState(0);
   const [isDispensingAnimation, setIsDispensingAnimation] = useState(false);
   const [dispenseMedName, setDispenseMedName] = useState('');
   const [vitalEditMode, setVitalEditMode] = useState(false);
   const [editedBP, setEditedBP] = useState(vitals.bloodPressure);
   const [editedHR, setEditedHR] = useState(vitals.heartRate);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsRemaining((prev) => (prev <= 0 ? 5400 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const formatCountdown = (totalSec: number) => {
     const hrs = Math.floor(totalSec / 3600);
@@ -66,6 +61,37 @@ export default function DashboardView({
 
   const activeSchedules = schedules.filter(s => s.active);
   const nextSchedule = activeSchedules[0] || null;
+  const successCount = dispenseLogs.filter(l => l.status === 'success').length;
+  const adherenceScore = dispenseLogs.length > 0 ? Math.round((successCount / dispenseLogs.length) * 100) : 0;
+
+  const nextScheduleDate = useMemo(() => {
+    if (!nextSchedule?.dispense_time) return null;
+    const [hourStr, minuteStr] = nextSchedule.dispense_time.split(':');
+    const hour = Number(hourStr);
+    const minute = Number(minuteStr);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+    const now = new Date();
+    const target = new Date(now);
+    target.setHours(hour, minute, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+    return target;
+  }, [nextSchedule]);
+
+  useEffect(() => {
+    if (!nextScheduleDate) {
+      setSecondsRemaining(0);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const diff = Math.max(0, Math.floor((nextScheduleDate.getTime() - Date.now()) / 1000));
+      setSecondsRemaining(diff);
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [nextScheduleDate]);
 
   const handleManualDispenseClick = async (compartmentLetter: string, name: string) => {
     if (!device?.device_uid) {
@@ -149,11 +175,17 @@ export default function DashboardView({
           <div className="relative z-10 space-y-4">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs font-bold text-[#434652] uppercase tracking-wider mb-1">Next Scheduled Release in</p>
+                <p className="text-xs font-bold text-[#434652] uppercase tracking-wider mb-1">{nextScheduleDate ? 'Next Scheduled Release in' : 'No upcoming active schedule'}</p>
                 <div className="text-4xl md:text-5xl font-bold font-mono text-[#003482] tracking-tight flex items-baseline gap-1 bg-gray-50 px-3.5 py-1.5 rounded-lg border border-gray-200">
-                  {hrs}<span className="text-lg text-[#737784] font-normal mr-1">h</span>
-                  {mins}<span className="text-lg text-[#737784] font-normal mr-1">m</span>
-                  {secs}<span className="text-lg text-[#737784] font-normal">s</span>
+                  {nextScheduleDate ? (
+                    <>
+                      {hrs}<span className="text-lg text-[#737784] font-normal mr-1">h</span>
+                      {mins}<span className="text-lg text-[#737784] font-normal mr-1">m</span>
+                      {secs}<span className="text-lg text-[#737784] font-normal">s</span>
+                    </>
+                  ) : (
+                    '--:--:--'
+                  )}
                 </div>
               </div>
               <div className="bg-[#eff4ff] p-3 rounded-full text-[#003482] border border-[#dce9ff]">
@@ -216,16 +248,20 @@ export default function DashboardView({
                 stroke="#006d37" 
                 strokeWidth="9"
                 strokeDasharray="257.6"
-                strokeDashoffset="20"
+                strokeDashoffset={`${257.6 - (adherenceScore / 100) * 257.6}`}
                 strokeLinecap="round"
                 className="transition-all duration-1000 ease-out"
               ></circle>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-[#0f1c2d]">
-              <span className="text-2xl font-bold tracking-tight">92%</span>
+              <span className="text-2xl font-bold tracking-tight">{adherenceScore}%</span>
               <span className="text-[10px] uppercase font-bold text-[#434652]">Score</span>
             </div>
           </div>
+
+          <span className="text-xs text-[#434652] block mb-3">
+            {dispenseLogs.length > 0 ? `${successCount}/${dispenseLogs.length} recent dispense events verified` : 'Awaiting dispense history from the device.'}
+          </span>
 
           <button 
             onClick={() => onNavigateTab('adherence')}

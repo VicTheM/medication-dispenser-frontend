@@ -62,7 +62,7 @@ export default function SettingsView({
         setApiTestResult(`RESPONSE ${res.status}: Backend reached but returned ${res.statusText}`);
       }
     } catch (err: any) {
-      setApiTestResult(`OFFLINE: Could not reach endpoint (${err.message}). Using mock fallback mode.`);
+      setApiTestResult(`OFFLINE: Could not reach endpoint (${err.message}). Verify backend URL and connectivity.`);
     } finally {
       setIsTestingApi(false);
     }
@@ -150,15 +150,6 @@ export default function SettingsView({
                 Test Connection
               </button>
 
-              <label className="flex items-center gap-2 text-xs font-bold text-[#0f1c2d] cursor-pointer">
-                <input 
-                  type="checkbox"
-                  checked={settings.useRealApi}
-                  onChange={(e) => onUpdateSettings({ useRealApi: e.target.checked })}
-                  className="rounded text-[#003482]"
-                />
-                Use Real Backend API
-              </label>
             </div>
 
             {apiTestResult && (
