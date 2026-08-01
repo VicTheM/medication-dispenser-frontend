@@ -41,10 +41,10 @@ export default function Navigation({
   userRole
 }: NavigationProps) {
 
-  const navItems: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
+  const allNavItems: { id: TabType; label: string; icon: React.ReactNode; badge?: number; caregiverOnly?: boolean }[] = [
     { id: 'landing', label: 'Overview & Hardware', icon: <Home className="w-4 h-4" /> },
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'patients', label: 'Patients', icon: <Users className="w-4 h-4" /> },
+    { id: 'patients', label: 'Patients', icon: <Users className="w-4 h-4" />, caregiverOnly: true },
     { id: 'medications', label: '7-Compartment Schedules', icon: <Pill className="w-4 h-4" /> },
     { id: 'adherence', label: 'Adherence & Videos', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'hardware', label: 'Dispenser Unit', icon: <Cpu className="w-4 h-4" /> },
@@ -52,6 +52,7 @@ export default function Navigation({
     { id: 'notifications', label: 'Alerts', icon: <Bell className="w-4 h-4" />, badge: unreadNotificationCount },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-4 h-4" /> },
   ];
+  const navItems = allNavItems.filter(item => !item.caregiverOnly || userRole === 'caregiver');
 
   return (
     <header className="bg-white border-b border-[#c3c6d5] sticky top-0 z-40 shadow-xs">

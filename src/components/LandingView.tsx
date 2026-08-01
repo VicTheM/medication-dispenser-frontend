@@ -126,7 +126,7 @@ export default function LandingView({ onLaunchPortal }: LandingViewProps) {
                   className="px-6 py-3.5 bg-white text-[#003482] border border-[#c3c6d5] hover:bg-[#eff4ff] font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Cpu className="w-4 h-4 text-[#003482]" />
-                  Try Hardware Dispenser Simulator
+                  View Dispenser Preview
                 </a>
               </div>
 
@@ -238,28 +238,27 @@ export default function LandingView({ onLaunchPortal }: LandingViewProps) {
         </div>
       </section>
 
-      {/* Interactive Hardware Dispenser Simulator Section */}
+      {/* Interactive Hardware Dispenser Simulator */}
       <section id="demo-simulator" className="py-16 bg-white border-b border-[#c3c6d5]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-8">
           
           <div className="text-center max-w-3xl mx-auto">
             <span className="text-xs font-bold uppercase text-[#003482] tracking-wider bg-[#eff4ff] px-3 py-1 rounded-full border border-[#003482]/20">
-              Interactive Hardware Demo
+              Preview &middot; Not Connected to a Live Device
             </span>
             <h2 className="text-3xl font-extrabold text-[#0f1c2d] mt-2">
-              Test the 7-Compartment Stepper Motor Release
+              See How a 7-Compartment Dispense Looks
             </h2>
             <p className="text-[#434652] text-sm mt-1">
-              Select a medication compartment below to simulate live ESP32 motor indexing, blue LCD readout update, and telemetry LED feedback.
+              This is a visual walkthrough only. Sign in to a caregiver account to control a real dispenser.
             </p>
           </div>
 
-          <div className="bg-[#f8f9ff] border border-[#c3c6d5] rounded-2xl p-6 md:p-8 max-w-4xl mx-auto shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <div className="bg-[#f8f9ff] border border-[#c3c6d5] rounded-2xl p-6 md:p-8 max-w-3xl mx-auto shadow-sm space-y-5">
             
-            {/* Slot Selector (Span 5) */}
-            <div className="md:col-span-5 space-y-4">
-              <h3 className="text-sm font-bold text-[#0f1c2d]">Select Compartment Slot (A–G)</h3>
-              <div className="grid grid-cols-4 gap-2">
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-[#0f1c2d]">Select a compartment (A–G)</h3>
+              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                 {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((slot) => (
                   <button
                     key={slot}
@@ -273,76 +272,34 @@ export default function LandingView({ onLaunchPortal }: LandingViewProps) {
                         : 'bg-white text-[#0f1c2d] border-[#c3c6d5] hover:bg-gray-50'
                     }`}
                   >
-                    Slot {slot}
+                    {slot}
                   </button>
                 ))}
               </div>
-
-              <div className="p-3 bg-white border border-[#c3c6d5] rounded-lg text-xs space-y-1">
-                <p className="font-bold text-[#003482]">Target: Compartment {selectedSlot}</p>
-                <p className="text-[#737784]">Medication: {selectedSlot === 'A' ? 'Lisinopril 10mg' : selectedSlot === 'B' ? 'Metformin 500mg' : 'Multivitamin Supplement'}</p>
-                <p className="text-[#737784]">Time Schedule: 08:00 AM (Daily)</p>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={triggerSimulateDispense}
-                  disabled={simState === 'dispensing'}
-                  className="flex-1 py-3 bg-[#003482] hover:bg-[#0c4aac] text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
-                >
-                  <Zap className="w-4 h-4 fill-white" />
-                  Trigger Dispense Motor
-                </button>
-                <button
-                  onClick={resetSimulate}
-                  className="px-4 py-3 bg-white text-[#737784] border border-[#c3c6d5] hover:bg-gray-50 font-bold text-xs rounded-lg cursor-pointer"
-                >
-                  Reset
-                </button>
-              </div>
             </div>
 
-            {/* Simulated Live Readout Box (Span 7) */}
-            <div className="md:col-span-7 bg-[#0f1c2d] text-white p-6 rounded-xl space-y-4 font-mono border border-gray-700 shadow-xl">
-              <div className="flex justify-between items-center text-xs border-b border-gray-700 pb-2">
-                <span className="text-[#64d2ff] font-bold">ESP32 TELEMETRY CONSOLE LOG</span>
-                <span className="text-gray-400 text-[10px]">9600 BAUD</span>
-              </div>
-
-              <div className="space-y-2 text-xs text-gray-300 min-h-[140px] flex flex-col justify-center">
-                {simState === 'idle' && (
-                  <>
-                    <p className="text-green-400">&gt; RTC Clock: Synchronized with NTP server (UTC-5)</p>
-                    <p>&gt; Indexing Stepper Motor aligned at Home Position [Slot A].</p>
-                    <p>&gt; Waiting for schedule trigger or remote WebSocket command...</p>
-                  </>
-                )}
-
-                {simState === 'dispensing' && (
-                  <>
-                    <p className="text-yellow-400 animate-pulse">&gt; COMMAND RECEIVED: RELEASE_COMPARTMENT({selectedSlot})</p>
-                    <p>&gt; Rotating internal 7-tray carousel to Slot {selectedSlot}...</p>
-                    <p>&gt; Actuating motorized trap door solenoid [500ms delay]...</p>
-                    <p className="text-blue-400">&gt; Optoelectronic sensor monitoring drop passage...</p>
-                  </>
-                )}
-
-                {simState === 'dispensed' && (
-                  <>
-                    <p className="text-green-400 font-bold">&gt; DISPENSE CONFIRMED: Pill passed drop gate successfully!</p>
-                    <p>&gt; Blue LCD Display updated: "SLOT {selectedSlot} DISPENSED".</p>
-                    <p>&gt; Status event cached locally (Event ID #8849) &amp; pushed to Cloud API.</p>
-                    <p className="text-[#91f8ad] font-bold">&gt; Video Verification Stream Active: Face &amp; pill detected.</p>
-                  </>
-                )}
-              </div>
-
-              <div className="pt-2 border-t border-gray-800 flex justify-between items-center text-[11px] text-gray-400">
-                <span>WiFi: Connected (-54 dBm)</span>
-                <span>Batt: 98% (Charging)</span>
-              </div>
+            <div className="flex gap-2">
+              <button
+                onClick={triggerSimulateDispense}
+                disabled={simState === 'dispensing'}
+                className="flex-1 py-3 bg-[#003482] hover:bg-[#0c4aac] text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <Zap className="w-4 h-4 fill-white" />
+                Preview Dispense from Slot {selectedSlot}
+              </button>
+              <button
+                onClick={resetSimulate}
+                className="px-4 py-3 bg-white text-[#737784] border border-[#c3c6d5] hover:bg-gray-50 font-bold text-xs rounded-lg cursor-pointer"
+              >
+                Reset
+              </button>
             </div>
 
+            <p className="text-xs text-center text-[#737784]">
+              {simState === 'idle' && `Dispenser is idle, waiting at slot ${selectedSlot}.`}
+              {simState === 'dispensing' && `Opening compartment ${selectedSlot}...`}
+              {simState === 'dispensed' && `Compartment ${selectedSlot} dispensed successfully.`}
+            </p>
           </div>
 
         </div>

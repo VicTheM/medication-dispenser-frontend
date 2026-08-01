@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
+  CaregiverUser,
   PatientUser, 
   DeviceStatus, 
   MedicationRecord, 
@@ -48,11 +49,12 @@ import NotificationsView from './components/NotificationsView';
 import SettingsView from './components/SettingsView';
 
 export default function App() {
-  // Authentication & Session
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  // Authentication & Session — the app starts signed out; every session must
+  // go through a real /auth/* call before any patient data is shown.
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole>('caregiver');
-  const [userEmail, setUserEmail] = useState<string>('dr.smith@medlab.org');
-  const [userName, setUserName] = useState<string>('Dr. Sarah Smith');
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
 
   // Navigation - Default to Landing Page
@@ -73,6 +75,9 @@ export default function App() {
   const [notifications, setNotifications] = useState<NotificationRecord[]>(MOCK_NOTIFICATIONS);
   const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocRecord[]>(MOCK_KNOWLEDGE);
 
+  // Own patient id when signed in as a patient (read-only /patients/me/* scope)
+  const [ownPatientId, setOwnPatientId] = useState<string | null>(null);
+
   // App vitals & settings
   const [vitals, setVitals] = useState<Vitals>(INITIAL_VITALS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(INITIAL_ACTIVITY_LOGS);
@@ -85,53 +90,97 @@ export default function App() {
     api.setBaseUrl(settings.apiBaseUrl);
   }, [settings.apiBaseUrl]);
 
-  // Initial backend data load
+  // Initial backend data load — caregivers get their patient roster; a
+  // patient's own record already comes back from login (handleAuthComplete).
   useEffect(() => {
-    if (!settings.useRealApi) return;
+    if (!settings.useRealApi || !isAuthenticated || userRole !== 'caregiver') return;
 
     async function loadBackendData() {
-      try {
-        const pRes = await api.listPatients();
-        if (pRes.data && pRes.data.length > 0) {
-          setPatients(pRes.data);
+      const pRes = await api.listPatients();
+      if (pRes.data) {
+        setPatients(pRes.data);
+        if (pRes.data.length > 0 && !pRes.data.some(p => p.id === selectedPatientId)) {
+          setSelectedPatientId(pRes.data[0].id);
         }
-      } catch (err) {
-        console.warn('Real API unavailable, using local mock data.', err);
+      } else if (pRes.error) {
+        console.error('Failed to load patients:', pRes.error);
       }
     }
     loadBackendData();
-  }, [settings.useRealApi]);
+  }, [settings.useRealApi, isAuthenticated, userRole]);
 
-  // Load patient details function
+  // Load patient details function — uses the caregiver-scoped routes for a
+  // caregiver, or the read-only /patients/me/* routes for a patient.
   const loadPatientDetails = async () => {
-    if (!selectedPatientId || !settings.useRealApi) return;
-    try {
-      const [medsRes, schsRes, devRes, dispsRes, notifsRes] = await Promise.all([
+    if (!settings.useRealApi || !isAuthenticated) return;
+    if (userRole === 'caregiver') {
+      if (!selectedPatientId) return;
+      const [medsRes, schsRes, devRes, dispsRes, notifsRes, videosRes, telemetryRes, voiceRes] = await Promise.all([
         api.listMedications(selectedPatientId),
         api.listSchedules(selectedPatientId),
         api.getPatientDevice(selectedPatientId),
         api.listDispenseLogs(selectedPatientId),
-        api.listNotifications(selectedPatientId)
+        api.listNotifications(selectedPatientId),
+        api.listAdherenceVideos(selectedPatientId),
+        api.listTelemetry(selectedPatientId),
+        api.listVoiceInteractions(selectedPatientId)
       ]);
       if (medsRes.data) setMedications(medsRes.data);
       if (schsRes.data) setSchedules(schsRes.data);
       if (devRes.data) setDevice(devRes.data);
       if (dispsRes.data) setDispenseLogs(dispsRes.data);
       if (notifsRes.data) setNotifications(notifsRes.data);
-    } catch (e) {
-      console.warn('Using local patient data fallback');
+      if (videosRes.data) setVideos(videosRes.data);
+      if (telemetryRes.data) setTelemetry(telemetryRes.data);
+      if (voiceRes.data) setVoiceInteractions(voiceRes.data);
+    } else {
+      const [medsRes, schsRes, devRes, dispsRes, notifsRes, videosRes, voiceRes] = await Promise.all([
+        api.getMyMedications(),
+        api.getMySchedules(),
+        api.getMyDevice(),
+        api.getMyDispenseLogs(),
+        api.getMyNotifications(),
+        api.getMyAdherenceVideos(),
+        api.getMyVoiceInteractions()
+      ]);
+      if (medsRes.data) setMedications(medsRes.data);
+      if (schsRes.data) setSchedules(schsRes.data);
+      if (devRes.data) setDevice(devRes.data);
+      if (dispsRes.data) setDispenseLogs(dispsRes.data);
+      if (notifsRes.data) setNotifications(notifsRes.data);
+      if (videosRes.data) setVideos(videosRes.data);
+      if (voiceRes.data) setVoiceInteractions(voiceRes.data);
     }
   };
 
   useEffect(() => {
     loadPatientDetails();
-  }, [selectedPatientId, settings.useRealApi]);
+  }, [selectedPatientId, settings.useRealApi, isAuthenticated, userRole]);
 
-  // Auth Handler
-  const handleAuthComplete = (user: { email: string; role: UserRole; name: string }) => {
-    setUserEmail(user.email);
+  // Patients management is caregiver-only; bounce a patient session off it.
+  useEffect(() => {
+    if (userRole === 'patient' && activeTab === 'patients') {
+      setActiveTab('dashboard');
+    }
+  }, [userRole, activeTab]);
+
+  // Auth Handler — called only after a real /auth/* call succeeded and the
+  // signed-in user's profile was fetched from /caregivers/me or /patients/me.
+  const handleAuthComplete = (user: { role: UserRole; profile: CaregiverUser | PatientUser }) => {
     setUserRole(user.role);
-    setUserName(user.name);
+    if (user.role === 'caregiver') {
+      const cg = user.profile as CaregiverUser;
+      setUserEmail(cg.email);
+      setUserName(cg.full_name);
+      setOwnPatientId(null);
+    } else {
+      const pt = user.profile as PatientUser;
+      setUserEmail(pt.email || '');
+      setUserName(pt.full_name);
+      setOwnPatientId(pt.id);
+      setPatients([pt]);
+      setSelectedPatientId(pt.id);
+    }
     setIsAuthenticated(true);
     setShowAuthModal(false);
     setActiveTab('dashboard');
@@ -147,7 +196,11 @@ export default function App() {
   };
 
   const handleSignOut = () => {
+    api.clearAuth();
     setIsAuthenticated(false);
+    setUserEmail('');
+    setUserName('');
+    setOwnPatientId(null);
     setActiveTab('landing');
   };
 
@@ -301,7 +354,11 @@ export default function App() {
   const handleForceSyncSchedule = async () => {
     if (settings.useRealApi) {
       const res = await api.forceSyncSchedule(selectedPatientId);
-      alert('Schedules forcibly synchronized to ESP32 dispenser.');
+      if (res.error) {
+        alert(`Sync failed: ${res.error}`);
+      } else {
+        alert('Schedules forcibly synchronized to ESP32 dispenser.');
+      }
       return res;
     } else {
       alert('Local demo mode: Schedules synchronized to dispenser memory.');
@@ -313,6 +370,10 @@ export default function App() {
   const handleAssignDevice = async (deviceUid: string) => {
     if (settings.useRealApi) {
       const res = await api.assignDevice(selectedPatientId, deviceUid);
+      if (res.error) {
+        alert(`Failed to assign device: ${res.error}`);
+        return;
+      }
       if (res.data) {
         setDevice({
           id: res.data.id,
@@ -338,7 +399,11 @@ export default function App() {
   const handleSendCommand = async (deviceUid: string, commandType: string, payload?: Record<string, any>) => {
     if (settings.useRealApi) {
       const result = await api.sendDeviceCommand(deviceUid, commandType, payload);
-      alert(`Hardware Command sent: ${result.data?.status || 'Success'}`);
+      if (result.error) {
+        alert(`Command failed: ${result.error}`);
+      } else {
+        alert(`Hardware Command sent: ${result.data?.status || 'Success'}`);
+      }
       return result;
     } else {
       const newLog: ActivityLog = {
