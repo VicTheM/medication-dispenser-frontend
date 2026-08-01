@@ -1,177 +1,106 @@
 import React from 'react';
 import { 
   LayoutDashboard, 
+  Users, 
   Pill, 
   BarChart3, 
-  Settings as SettingsIcon, 
-  Plus, 
-  HelpCircle, 
-  LogOut, 
-  Menu, 
+  Cpu, 
+  Bot, 
   Bell, 
+  Settings as SettingsIcon,
   Activity,
-  Radio
+  ShieldCheck
 } from 'lucide-react';
+import { UserRole } from '../types';
+
+export type TabType = 
+  | 'dashboard' 
+  | 'patients' 
+  | 'medications' 
+  | 'adherence' 
+  | 'hardware' 
+  | 'ai_assistant' 
+  | 'notifications' 
+  | 'settings';
 
 interface NavigationProps {
-  currentTab: 'dashboard' | 'medications' | 'adherence' | 'settings';
-  onChangeTab: (tab: 'dashboard' | 'medications' | 'adherence' | 'settings') => void;
-  onNewPrescription: () => void;
-  onSignOut: () => void;
-  userEmail: string;
+  currentTab: TabType;
+  onTabChange: (tab: TabType) => void;
+  unreadNotificationCount: number;
+  currentPatientName: string;
+  userRole: UserRole;
 }
 
 export default function Navigation({ 
   currentTab, 
-  onChangeTab, 
-  onNewPrescription, 
-  onSignOut,
-  userEmail 
+  onTabChange, 
+  unreadNotificationCount,
+  currentPatientName,
+  userRole
 }: NavigationProps) {
 
-  // Navigation Items details
-  const NAV_ITEMS = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'medications', label: 'Medications', icon: Pill },
-    { id: 'adherence', label: 'Adherence', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
-  ] as const;
+  const navItems: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'patients', label: 'Patients', icon: <Users className="w-4 h-4" /> },
+    { id: 'medications', label: '7-Compartment Schedules', icon: <Pill className="w-4 h-4" /> },
+    { id: 'adherence', label: 'Adherence & Videos', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'hardware', label: 'Dispenser Unit', icon: <Cpu className="w-4 h-4" /> },
+    { id: 'ai_assistant', label: 'Ally AI Assistant', icon: <Bot className="w-4 h-4" /> },
+    { id: 'notifications', label: 'Alerts', icon: <Bell className="w-4 h-4" />, badge: unreadNotificationCount },
+    { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-4 h-4" /> },
+  ];
 
   return (
-    <>
-      {/* 1. DESKTOP SIDEBAR NAVIGATION PANEL */}
-      <aside 
-        id="desktop-sidebar-nav" 
-        className="hidden md:flex h-screen w-64 flex-col bg-white border-r border-[#c3c6d5] p-4 gap-4 shrink-0 fixed left-0 top-0 z-40"
-      >
-        <div className="flex items-center gap-2 mb-6 px-1 pt-2">
-          <div className="w-10 h-10 bg-[#e6eeff] rounded-lg flex items-center justify-center text-[#003482]">
-            <Activity className="w-6 h-6" />
+    <header className="bg-white border-b border-[#c3c6d5] sticky top-0 z-40 shadow-xs">
+      {/* Top Banner */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+        
+        {/* Brand */}
+        <div className="flex items-center gap-3">
+          <div className="bg-[#003482] text-white p-2 rounded-lg shadow-xs">
+            <Activity className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-[#003482] leading-none">MedLab</h1>
-            <p className="text-xs text-[#434652] mt-1 font-semibold">Clinical Portal</p>
+            <h1 className="font-extrabold text-base tracking-tight text-[#003482] leading-tight">MedLab | Adherence pro</h1>
+            <p className="text-[10px] text-[#737784] font-semibold uppercase tracking-wider">7-Compartment Clinical Portal</p>
           </div>
         </div>
 
-        {/* Prescription quick button */}
-        <button 
-          onClick={onNewPrescription}
-          className="w-full bg-[#003482] text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-[#0c4aac] transition-all cursor-pointer shadow-sm active:scale-95 duration-150 mb-4"
-        >
-          <Plus className="w-5 h-5" />
-          New Prescription
-        </button>
-
-        {/* Tab Links */}
-        <nav className="flex-1 flex flex-col gap-1 text-sm font-semibold">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onChangeTab(item.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left cursor-pointer ${
-                  isActive 
-                    ? 'text-[#003482] font-bold bg-[#e6eeff]' 
-                    : 'text-[#434652] hover:bg-[#eff4ff] hover:text-[#0f1c2d]'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-[#003482]' : 'text-[#737784]'}`} />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Sidebar Footer Link Groupings */}
-        <div className="mt-auto flex flex-col gap-1 pt-4 border-t border-[#c3c6d5] text-sm font-semibold">
-          <button 
-            onClick={() => onChangeTab('settings')}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-[#434652] hover:bg-[#eff4ff] hover:text-[#0f1c2d] text-left cursor-pointer w-full"
-          >
-            <HelpCircle className="w-5 h-5 text-[#737784]" />
-            Support Help
-          </button>
-          <button 
-            onClick={onSignOut}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-[#ba1a1a] hover:bg-red-50 text-left cursor-pointer w-full"
-          >
-            <LogOut className="w-5 h-5 text-[#ba1a1a]" />
-            Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* 2. MOBILE TOP BAR PANEL */}
-      <header 
-        id="mobile-top-bar" 
-        className="md:hidden flex justify-between items-center px-4 w-full h-16 bg-white border-b border-[#c3c6d5] z-40 fixed top-0 left-0 shadow-sm"
-      >
-        <div className="flex items-center gap-2">
-          <Menu 
-            className="w-6 h-6 text-[#434652] cursor-pointer hover:text-[#0f1c2d]" 
-            onClick={() => onChangeTab('settings')} // quick detour to actions
-          />
-          <h1 className="text-xl font-bold text-[#003482]">MedLab</h1>
-        </div>
-
+        {/* Patient / Role Badge */}
         <div className="flex items-center gap-3">
-          <button className="text-[#434652] hover:bg-gray-100 p-2 rounded-full transition-all relative">
-            <Radio className="w-5 h-5 text-[#006d37] animate-pulse" />
-          </button>
-          
-          <button className="text-[#434652] hover:bg-gray-100 p-2 rounded-full transition-all relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-[#ba1a1a] rounded-full"></span>
-          </button>
-
-          {/* Clinician Headshot profile representation */}
-          <div 
-            onClick={() => onChangeTab('settings')}
-            className="w-8 h-8 rounded-full border border-[#c3c6d5] overflow-hidden cursor-pointer active:opacity-80"
-          >
-            <img 
-              alt="Clinician Avatar"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEHJGAJTTwNevUFHMihpow-kW688RKd6OI2H69Tx3gMR7Ag67tpI6Ra2dO_D9qZN3KAhLe6J7Qy6TAsu8O8jVyRJk5Fn2-YCmX4DazXYe3_IOZM7nAj7WWwNHitcDOBPGn04ugonDfWivKzJdnB55I6rAlvNdyg4OR_m9wBu3JUwPYK7fEdBmGIRNq1Ub17KGOgFEJTrCJ2CDVGraTZLgTjNcyLrh-5puCq4subPQ6BEyfAIRmakxYvN8RNMsZp2-iiZ_y42asCYg" 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
+          <div className="hidden sm:flex items-center gap-2 bg-[#eff4ff] border border-[#003482]/20 px-3 py-1.5 rounded-lg text-xs">
+            <ShieldCheck className="w-4 h-4 text-[#006d37]" />
+            <span className="font-bold text-[#003482]">{currentPatientName}</span>
+            <span className="text-[10px] bg-[#91f8ad] text-[#00743b] px-1.5 py-0.5 rounded uppercase font-extrabold">{userRole}</span>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* 3. MOBILE BOTTOM NAV-TABS SCREEN STICKY FOOTER */}
-      <nav 
-        id="mobile-bottom-nav" 
-        className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#c3c6d5] flex justify-around items-center h-16 px-2 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
-      >
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
+      {/* Navigation Tabs */}
+      <nav className="max-w-7xl mx-auto px-4 md:px-8 flex overflow-x-auto scrollbar-none border-t border-gray-100">
+        {navItems.map((item) => {
           const isActive = currentTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => onChangeTab(item.id)}
-              className={`flex flex-col items-center justify-center w-1/4 h-full cursor-pointer relative ${
-                isActive ? 'text-[#003482]' : 'text-[#737784]'
+              onClick={() => onTabChange(item.id)}
+              className={`flex items-center gap-2 px-3.5 py-3 text-xs font-bold border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+                isActive 
+                  ? 'border-[#003482] text-[#003482] bg-[#eff4ff]/60' 
+                  : 'border-transparent text-[#737784] hover:text-[#0f1c2d] hover:bg-gray-50'
               }`}
             >
-              {isActive ? (
-                <div className="bg-[#e6eeff] px-4 py-0.5 rounded-full mb-1">
-                  <Icon className="w-5 h-5 text-[#003482]" />
-                </div>
-              ) : (
-                <Icon className="w-5.5 h-5.5 mb-1 text-[#737784]" />
+              {item.icon}
+              <span>{item.label}</span>
+              {item.badge !== undefined && item.badge > 0 && (
+                <span className="bg-[#ba1a1a] text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-0.5">
+                  {item.badge}
+                </span>
               )}
-              <span className="text-[10px] uppercase font-bold tracking-wider leading-none">
-                {item.id === 'medications' ? 'Meds' : item.label}
-              </span>
             </button>
           );
         })}
       </nav>
-    </>
+    </header>
   );
 }

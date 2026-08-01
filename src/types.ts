@@ -1,88 +1,172 @@
 /**
- * Represents the onboarding state for a clinical/patient account.
+ * MedAdhere & MedLab Types
+ * Aligned with OpenAPI 3.1.0 backend schemas and UI features
  */
+
+export type UserRole = 'caregiver' | 'patient';
+
+export interface AuthToken {
+  access_token: string;
+  token_type: string;
+  role: UserRole;
+}
+
+export interface CaregiverUser {
+  id: string;
+  full_name: string;
+  email: string;
+  phone?: string | null;
+  created_at: string;
+}
+
+export interface PatientUser {
+  id: string;
+  caregiver_id: string;
+  full_name: string;
+  date_of_birth?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+  timezone: string;
+  created_at: string;
+}
+
+export interface DeviceStatus {
+  id: string;
+  device_uid: string;
+  patient_id?: string | null;
+  status: 'online' | 'offline' | 'unassigned' | string;
+  last_seen_at?: string | null;
+  firmware_version?: string | null;
+  wifi_ssid?: string | null;
+  battery_level?: number | null;
+  uptime_seconds?: number | null;
+}
+
+export interface DeviceFull extends DeviceStatus {
+  device_secret?: string;
+}
+
+export interface MedicationRecord {
+  id: string;
+  patient_id: string;
+  name: string;
+  dosage?: string | null;
+  form?: string | null; // e.g. "Tablet", "Capsule", "Liquid", "Inhaler"
+  instructions?: string | null;
+  prescribing_doctor?: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+export interface ScheduleRecord {
+  id: string;
+  patient_id: string;
+  compartment: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | string;
+  dispense_time: string; // "HH:MM" 24h
+  frequency: 'daily' | 'specific_days' | 'as_needed' | string;
+  days_of_week?: string[] | null; // e.g. ["mon", "wed", "fri"]
+  start_date?: string | null;
+  end_date?: string | null;
+  active: boolean;
+  medication_ids: string[];
+  medication_names: string[];
+  updated_at: string;
+}
+
+export interface DispenseEventRecord {
+  id: string;
+  device_id: string;
+  patient_id: string;
+  schedule_id?: string | null;
+  compartment: string;
+  status: 'success' | 'failed' | 'skipped' | 'manual' | string;
+  scheduled_time?: string | null;
+  dispensed_at: string;
+  received_at: string;
+  was_offline_cached: boolean;
+  has_video: boolean;
+}
+
+export interface AdherenceVideoRecord {
+  id: string;
+  dispense_event_id: string;
+  file_path: string;
+  duration_seconds: number;
+  person_detected?: boolean | null;
+  uploaded_at: string;
+}
+
+export interface TelemetryRecord {
+  id: string;
+  device_id: string;
+  reported_at: string;
+  current_compartment?: string | null;
+  motor_status?: string | null;
+  sensor_status?: string | null;
+  person_detected?: boolean | null;
+  tray_state?: string | null;
+  battery_level?: number | null;
+  wifi_rssi?: number | null;
+  uptime_seconds?: number | null;
+}
+
+export interface VoiceInteractionRecord {
+  id: string;
+  patient_id: string;
+  device_id?: string | null;
+  transcript?: string | null;
+  answer_text?: string | null;
+  citations?: any[] | null;
+  tool_results?: any[] | null;
+  audio_format?: string | null;
+  created_at: string;
+}
+
+export interface NotificationRecord {
+  id: string;
+  patient_id: string;
+  type: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface KnowledgeDocRecord {
+  id: string;
+  filename: string;
+  ingest_status: 'ingested' | 'failed' | 'processing' | string;
+  uploaded_at: string;
+}
+
+// UI State & Local Interfaces
 export interface OnboardingState {
   step: 1 | 2 | 3;
   firstName: string;
   lastName: string;
   email: string;
+  role: UserRole;
   isCompleted: boolean;
 }
 
-/**
- * Medication item form types.
- */
-export type MedicationFormType = 'Tablet' | 'Capsule' | 'Liquid' | 'Inhaler';
-
-/**
- * Frequency schedule types.
- */
-export type MedicationFrequencyType = 'Once daily' | 'Twice daily' | 'Three times daily' | 'custom';
-
-/**
- * A detail for when a medication should be dispensed.
- */
-export interface DispenseTime {
-  time: string; // e.g., "08:00"
-  pills: number;
+export interface Vitals {
+  bloodPressure: string;
+  heartRate: number;
+  temperature?: number;
+  spO2?: number;
 }
 
-/**
- * Structured Medication object.
- */
-export interface Medication {
-  id: string;
-  name: string;
-  dosage: string;
-  form: MedicationFormType;
-  frequency: MedicationFrequencyType;
-  times: DispenseTime[];
-  status: 'Active' | 'Next Up' | 'Inactive';
-  compartment: number; // 1, 2, 3, or 4
-  totalLeft: number;
-  totalCapacity: number;
-  purpose: string;
-}
-
-/**
- * Simple recent activity timeline log.
- */
 export interface ActivityLog {
   id: string;
-  timestamp: string; // e.g., "Today, 08:05 AM"
+  timestamp: string;
   text: string;
+  type?: 'dispense' | 'alert' | 'system' | 'sync';
 }
 
-/**
- * Patient vital signs.
- */
-export interface Vitals {
-  bloodPressure: string; // e.g., "120/80"
-  heartRate: number; // e.g., 72
-}
-
-/**
- * Daily adherence verification logs with video verification status.
- */
-export interface VerificationLog {
-  id: string;
-  status: 'Taken' | 'Missed';
-  timestamp: string; // e.g., "Today, 08:00 AM"
-  timeOfDay: string; // e.g., "08:00 AM"
-  medName: string;
-  dosage: string;
-  pills: number;
-  hasVideo: boolean;
-  videoUrl?: string; // unsplash video log representation
-  aiVerifiedText?: string; // AI confirmation text
-  cardPhotoUrl?: string; // unspash preview image
-}
-
-/**
- * Settings configuration state.
- */
 export interface ClinicalSettings {
   email: string;
+  apiBaseUrl: string;
+  useRealApi: boolean;
   alerts: {
     emailNotifications: boolean;
     pushNotifications: boolean;
@@ -90,5 +174,14 @@ export interface ClinicalSettings {
   };
   hardwareId: string;
   firmware: string;
-  lastCalibration: string; // "Oct 12, 2023 (14 days ago)"
+  lastCalibration: string;
+}
+
+export interface AllyChatMessage {
+  id: string;
+  sender: 'user' | 'ally';
+  text: string;
+  audioBase64?: string;
+  citations?: any[];
+  timestamp: string;
 }

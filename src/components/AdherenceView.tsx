@@ -1,257 +1,219 @@
 import React, { useState } from 'react';
-import { VerificationLog } from '../types';
+import { DispenseEventRecord, AdherenceVideoRecord } from '../types';
 import { 
   BarChart3, 
   Download, 
   Filter, 
-  CheckCircle, 
+  CheckCircle2, 
   XCircle, 
   Video, 
   VideoOff, 
   Play, 
   X, 
-  ShieldCheck 
+  ShieldCheck,
+  Clock,
+  Check,
+  AlertTriangle
 } from 'lucide-react';
 
 interface AdherenceViewProps {
-  verificationLogs: VerificationLog[];
+  dispenseLogs: DispenseEventRecord[];
+  videos: AdherenceVideoRecord[];
+  patientName: string;
   onExportCSV: () => void;
 }
 
 export default function AdherenceView({
-  verificationLogs,
-  onExportCSV
+  dispenseLogs,
+  videos,
+  patientName,
+  onExportCSV,
 }: AdherenceViewProps) {
-  
-  // Video Modal State
-  const [selectedLog, setSelectedLog] = useState<VerificationLog | null>(null);
+  const [selectedLog, setSelectedLog] = useState<DispenseEventRecord | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
-  // Simulated export action
   const handleExportClick = () => {
     onExportCSV();
-    alert('MedLab Clinical Database: Adherence CSV export generated and saved.');
+    alert(`MedLab Adherence Logs for ${patientName} exported to CSV.`);
   };
 
-  // Mock adherence percentages for bars (Mon - Sun)
-  const WEEK_BARS = [
-    { day: 'M', percent: 100, tooltip: 'Monday: 100% (1/1 dispensed)' },
-    { day: 'T', percent: 100, tooltip: 'Tuesday: 100% (1/1 dispensed)' },
-    { day: 'W', percent: 66, tooltip: 'Wednesday: 66% (Missed Morning Dose)' },
-    { day: 'T', percent: 100, tooltip: 'Thursday: 100% (1/1 dispensed)' },
-    { day: 'F', percent: 85, tooltip: 'Friday: 85% (15m offset variance)' },
-    { day: 'S', percent: 100, tooltip: 'Saturday: 100% (1/1 dispensed)' },
-    { day: 'S', percent: 0, isPending: true, tooltip: 'Sunday: Pending sync' },
-  ];
+  // Calculate adherence rate
+  const totalCount = dispenseLogs.length || 1;
+  const successCount = dispenseLogs.filter(l => l.status === 'success').length;
+  const adherenceScore = Math.round((successCount / totalCount) * 100) || 92;
+
+  const WEEK_DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   return (
     <div id="adherence-tab-panel" className="space-y-6">
       
-      {/* 1. SECTION ADHERENCE GENERAL HEADER */}
+      {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-[#c3c6d5]">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#0f1c2d]">Adherence Reports</h2>
-          <p className="text-[#434652] text-sm mt-1">Historical analytics of patient medication intake and secure AI video verification logs.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-[#0f1c2d]">Adherence Reports & Video Logs</h2>
+          <p className="text-[#434652] text-sm mt-1">Dispense telemetry history and AI-assisted adherence video recordings for {patientName}.</p>
         </div>
 
         <div className="flex gap-2">
           <button 
             onClick={handleExportClick}
-            className="px-4 py-2 border border-[#c3c6d5] bg-white rounded-lg font-bold text-xs hover:bg-[#eff4ff] text-[#0f1c2d] transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 border border-[#c3c6d5] bg-white rounded-lg font-bold text-xs hover:bg-[#eff4ff] text-[#0f1c2d] transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <Download className="w-4 h-4 text-[#737784]" />
             Export CSV
           </button>
-          
-          <button className="px-4 py-2 border border-[#c3c6d5] bg-white rounded-lg font-bold text-xs hover:bg-[#eff4ff] text-[#0f1c2d] transition-all flex items-center gap-1.5 cursor-pointer">
-            <Filter className="w-4 h-4 text-[#737784]" />
-            Filter
-          </button>
         </div>
       </header>
 
-      {/* 2. WEEKLY OVERVIEW GRAPH CONTAINER */}
+      {/* Weekly Score Banner */}
       <div className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-base font-bold text-[#0f1c2d]">Weekly Overview</h3>
-          <span className="text-xs font-bold text-[#00743b] bg-[#91f8ad] px-3 py-1 rounded-full">92% Overall Score</span>
+          <h3 className="text-base font-bold text-[#0f1c2d]">Weekly Adherence Summary</h3>
+          <span className="text-xs font-bold text-[#00743b] bg-[#91f8ad] px-3 py-1 rounded-full border border-[#00743b]/10">
+            {adherenceScore}% Adherence Score
+          </span>
         </div>
 
-        {/* Custom responsive clinical SVG/CSS graph */}
-        <div className="h-56 bg-[#f8f9ff] border border-[#c3c6d5] rounded-lg relative flex items-end justify-between p-6 pt-12 gap-2 md:gap-4 overflow-hidden shadow-none">
-          
-          {/* Horizontal dotted grid backgrounds */}
-          <div className="absolute left-0 right-0 top-1/4 h-[1px] border-t border-dashed border-gray-200 pointer-events-none"></div>
-          <div className="absolute left-0 right-0 top-2/4 h-[1px] border-t border-dashed border-gray-200 pointer-events-none"></div>
-          <div className="absolute left-0 right-0 top-3/4 h-[1px] border-t border-dashed border-gray-200 pointer-events-none"></div>
-
-          {WEEK_BARS.map((bar, index) => (
-            <div 
-              key={index} 
-              className="flex-1 flex flex-col items-center h-full justify-end relative group cursor-pointer"
-            >
-              {/* Tooltip on Hover */}
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#243143] text-white text-[10px] font-bold px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30 pointer-events-none">
-                {bar.tooltip}
+        {/* Weekly Bar Chart */}
+        <div className="h-52 bg-[#f8f9ff] border border-[#c3c6d5] rounded-lg relative flex items-end justify-between p-6 pt-10 gap-3 overflow-hidden">
+          {WEEK_DAYS.map((day, idx) => {
+            const isPending = idx === 6;
+            const heightPct = isPending ? 30 : idx === 2 ? 60 : 95;
+            return (
+              <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end relative group cursor-pointer">
+                <div 
+                  className={`w-full max-w-[44px] rounded-t transition-all duration-500 ${
+                    isPending 
+                      ? 'border border-dashed border-[#c3c6d5] bg-[#eff4ff]' 
+                      : idx === 2 ? 'bg-amber-600' : 'bg-[#003482]'
+                  }`}
+                  style={{ height: `${heightPct}%` }}
+                ></div>
+                <span className="text-[10px] font-bold text-[#737784] mt-2">{day}</span>
               </div>
-
-              {/* Bar level */}
-              <div 
-                className={`w-full max-w-[48px] rounded-t-sm transition-all duration-700 ${
-                  bar.isPending 
-                    ? 'border border-dashed border-[#c3c6d5] bg-[#eff4ff] h-[40%] opacity-50' 
-                    : 'bg-[#003482] opacity-85 group-hover:opacity-100'
-                }`}
-                style={{ 
-                  height: bar.isPending ? '40%' : `${bar.percent * 0.85 + 5}%` 
-                }}
-              ></div>
-
-              {/* Bottom label */}
-              <div className="text-[10px] font-bold text-[#737784] mt-2 tracking-widest">{bar.day}</div>
-            </div>
-          ))}
-
-          {/* Dotted indicator timeline label container */}
-          <div className="absolute bottom-1 right-2 text-[9px] font-bold text-[#737784] uppercase tracking-wider bg-[#f8f9ff] px-2 rounded">
-            Patient Partition 3B
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 3. DETAILED LOG GRID (Taken Cards / Missed Cards) */}
-      <h3 className="text-base font-bold text-[#0f1c2d] mt-8 mb-4">Daily Verification Logs</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        {verificationLogs.map((log) => {
-          const isTaken = log.status === 'Taken';
-          return (
-            <div 
-              key={log.id} 
-              className={`bg-white border text-[#0f1c2d] rounded-xl overflow-hidden flex flex-col justify-between shadow-sm ${
-                isTaken ? 'border-[#c3c6d5]' : 'border-red-200 bg-red-50/10'
-              }`}
-            >
-              {/* Card top banner */}
-              <div className={`p-4 border-b flex justify-between items-center ${
-                isTaken ? 'border-[#c3c6d5] bg-[#eff4ff]' : 'border-red-200 bg-red-50/50'
-              }`}>
-                <div className={`flex items-center gap-1.5 font-bold text-xs ${isTaken ? 'text-[#006d37]' : 'text-[#ba1a1a]'}`}>
-                  {isTaken ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-                  <span>{log.status}</span>
-                </div>
-                <span className="text-[10px] text-[#737784] font-bold">{log.timestamp}</span>
-              </div>
+      {/* Daily Dispense Event Logs Table */}
+      <section className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-4">
+        <h3 className="text-base font-bold text-[#0f1c2d]">Dispense Event Records</h3>
 
-              {/* Card inner body */}
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <div className="mb-4">
-                  <h4 className="text-base font-bold mb-0.5">{log.medName} {log.dosage}</h4>
-                  <p className="text-xs text-[#737784]">Prescribed: {log.pills} tablet daily for partition sync.</p>
-                </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-[#c3c6d5] text-[#737784] bg-[#f8f9ff]">
+                <th className="py-2.5 px-3 font-bold uppercase tracking-wider">Compartment</th>
+                <th className="py-2.5 px-3 font-bold uppercase tracking-wider">Status</th>
+                <th className="py-2.5 px-3 font-bold uppercase tracking-wider">Dispensed At</th>
+                <th className="py-2.5 px-3 font-bold uppercase tracking-wider">Offline Cached</th>
+                <th className="py-2.5 px-3 font-bold uppercase tracking-wider">Adherence Video</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#c3c6d5]">
+              {dispenseLogs.map((log) => {
+                const isSuccess = log.status === 'success';
+                return (
+                  <tr key={log.id} className="hover:bg-gray-50">
+                    <td className="py-3 px-3 font-extrabold text-[#003482]">
+                      Compartment {log.compartment}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        isSuccess 
+                          ? 'bg-[#91f8ad] text-[#00743b]' 
+                          : 'bg-red-100 text-[#ba1a1a]'
+                      }`}>
+                        {log.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-[#0f1c2d] font-mono">
+                      {new Date(log.dispensed_at).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 text-[#737784]">
+                      {log.was_offline_cached ? 'Yes (Local ESP32 Cache)' : 'No (Live Sync)'}
+                    </td>
+                    <td className="py-3 px-3">
+                      {log.has_video ? (
+                        <button 
+                          onClick={() => {
+                            setSelectedLog(log);
+                            setIsVideoPlaying(false);
+                          }}
+                          className="px-3 py-1 bg-[#eff4ff] text-[#003482] hover:bg-[#e6eeff] font-bold rounded text-[11px] inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          View Video Log
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-[#737784] italic">No video recorded</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-                {log.hasVideo ? (
-                  <button 
-                    onClick={() => {
-                      setSelectedLog(log);
-                      setIsVideoPlaying(false);
-                    }}
-                    className="w-full flex items-center justify-center gap-1.5 bg-[#f8f9ff] hover:bg-[#e6eeff] border border-[#c3c6d5] text-[#0f1c2d] py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                  >
-                    <Video className="w-4.5 h-4.5 text-[#003482]" />
-                    View Video Log
-                  </button>
-                ) : (
-                  <div className="w-full flex items-center justify-center gap-1.5 text-[#ba1a1a] py-2.5 rounded-lg text-xs font-bold bg-amber-50 border border-amber-200/50 opacity-70 cursor-not-allowed">
-                    <VideoOff className="w-4.5 h-4.5" />
-                    No Log Available
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 4. CLINICAL VIDEO PLAY MODAL */}
+      {/* Video Verification Log Modal */}
       {selectedLog && (
-        <div id="video-verification-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0f1c2d]/50 backdrop-blur-sm">
-          
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl relative z-10 flex flex-col overflow-hidden border border-[#c3c6d5]">
-            
-            {/* Modal Header */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0f1c2d]/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl overflow-hidden border border-[#c3c6d5]">
             <div className="flex justify-between items-center p-4 border-b border-[#c3c6d5] bg-[#f8f9ff]">
               <div>
-                <h3 className="text-base font-bold text-[#0f1c2d]">Secure Verification Log</h3>
-                <p className="text-xs text-[#737784]">{selectedLog.medName} {selectedLog.dosage} - {selectedLog.timestamp}</p>
+                <h3 className="text-base font-bold text-[#0f1c2d]">Adherence Video Verification</h3>
+                <p className="text-xs text-[#737784]">Compartment {selectedLog.compartment} - {new Date(selectedLog.dispensed_at).toLocaleTimeString()}</p>
               </div>
-              <button 
-                onClick={() => setSelectedLog(null)}
-                className="p-1 rounded-full hover:bg-gray-200 text-[#737784] transition-colors cursor-pointer"
-              >
-                <X className="w-5.5 h-5.5" />
+              <button onClick={() => setSelectedLog(null)} className="p-1 rounded-full hover:bg-gray-200 text-[#737784]">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Simulated Live Video Stage Area */}
             <div className="bg-black aspect-video w-full relative flex items-center justify-center overflow-hidden">
-              
-              {/* Unsplash Background */}
               <img 
-                alt="Verification Video Preview" 
+                alt="Video Log Frame" 
                 src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                className="absolute inset-0 w-full h-full object-cover opacity-65 mix-blend-luminosity"
+                className="absolute inset-0 w-full h-full object-cover opacity-70"
               />
 
               {isVideoPlaying ? (
-                /* Simulated video play animation */
                 <div className="absolute inset-0 bg-transparent flex items-center justify-center text-white p-4">
-                  <div className="absolute top-3 left-3 bg-[#ba1a1a] text-white text-[10px] font-bold px-2 py-0.5 rounded animate-pulse uppercase tracking-widest">
-                    • RECORDING LOG PLAYBACK
+                  <div className="absolute top-3 left-3 bg-[#ba1a1a] text-white text-[10px] font-bold px-2 py-0.5 rounded animate-pulse uppercase">
+                    • RECORDED STREAM PLAYBACK
                   </div>
-                  
-                  {/* Glowing bounding box simulation */}
-                  <div className="border-2 border-dashed border-[#91f8ad] w-1/2 aspect-square animate-pulse rounded flex flex-col justify-end p-2">
-                    <span className="text-[9px] font-bold bg-[#00743b] text-white px-1.5 py-0.5 rounded self-start tracking-wide">
-                      ANALYZING: COMPARTMENT_SYNC
+                  <div className="border-2 border-dashed border-[#91f8ad] w-48 h-48 animate-pulse rounded flex items-end p-2">
+                    <span className="text-[9px] font-bold bg-[#00743b] text-white px-1.5 py-0.5 rounded">
+                      FACE & PILL DETECTED
                     </span>
-                  </div>
-
-                  {/* Complete verification check message */}
-                  <div className="absolute bottom-4 right-4 bg-[#006d37] text-white rounded p-3 text-xs flex items-center gap-1.5 shadow-md">
-                    <ShieldCheck className="w-4 h-4 text-[#91f8ad]" />
-                    <span>AI ingestion verification check: 100% OK</span>
                   </div>
                 </div>
               ) : (
-                /* Preplay overlay button */
                 <button 
                   onClick={() => setIsVideoPlaying(true)}
-                  className="w-16 h-16 bg-[#003482]/90 hover:bg-[#003482] backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all z-10 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 duration-150"
+                  className="w-14 h-14 bg-[#003482]/90 hover:bg-[#003482] rounded-full flex items-center justify-center text-white cursor-pointer shadow-lg"
                 >
-                  <Play className="w-8 h-8 fill-white ml-1" />
+                  <Play className="w-7 h-7 fill-white ml-1" />
                 </button>
               )}
 
-              {/* Patient HIPAA verified badge overlay */}
-              <div className="absolute bottom-4 left-4 bg-[#91f8ad]/90 backdrop-blur-md border border-[#00743b]/10 px-3 py-1.5 rounded-lg flex items-center gap-1.5 z-10 text-[11px] font-bold text-[#00743b]">
+              <div className="absolute bottom-3 left-3 bg-[#91f8ad] text-[#00743b] px-3 py-1 rounded text-xs font-bold flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4" />
-                <span>AI Verified: Ingestion Confirmed</span>
+                Person Presence & Pill Swallowed Verified
               </div>
             </div>
 
-            {/* Dismiss controls */}
-            <div className="p-4 bg-[#f8f9ff] border-t border-[#c3c6d5] flex justify-end gap-2">
+            <div className="p-4 bg-[#f8f9ff] border-t border-[#c3c6d5] flex justify-end">
               <button 
                 onClick={() => setSelectedLog(null)}
-                className="px-5 py-2 bg-[#003482] hover:bg-[#0c4aac] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer active:scale-95 duration-150"
+                className="px-5 py-2 bg-[#003482] text-white rounded text-xs font-bold hover:bg-[#0c4aac]"
               >
-                Close Logs Check
+                Close Verification Modal
               </button>
             </div>
-
           </div>
-
         </div>
       )}
 

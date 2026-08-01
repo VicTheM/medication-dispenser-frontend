@@ -1,6 +1,6 @@
 {
   "name": "MedLab Clinical Portal",
   "description": "A high-precision clinical enrollment, hardware pairing, medication schedule manager, and patient adherence reporting application styled with medical accuracy.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
