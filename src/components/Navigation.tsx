@@ -41,10 +41,10 @@ export default function Navigation({
   userRole
 }: NavigationProps) {
 
-  const allNavItems: { id: TabType; label: string; icon: React.ReactNode; badge?: number; caregiverOnly?: boolean }[] = [
-    { id: 'landing', label: 'Overview & Hardware', icon: <Home className="w-4 h-4" /> },
+  const navItems: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
+    { id: 'landing', label: 'Public Overview & Hardware', icon: <Home className="w-4 h-4" /> },
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'patients', label: 'Patients', icon: <Users className="w-4 h-4" />, caregiverOnly: true },
+    { id: 'patients', label: 'Patients', icon: <Users className="w-4 h-4" /> },
     { id: 'medications', label: '7-Compartment Schedules', icon: <Pill className="w-4 h-4" /> },
     { id: 'adherence', label: 'Adherence & Videos', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'hardware', label: 'Dispenser Unit', icon: <Cpu className="w-4 h-4" /> },
@@ -52,7 +52,6 @@ export default function Navigation({
     { id: 'notifications', label: 'Alerts', icon: <Bell className="w-4 h-4" />, badge: unreadNotificationCount },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-4 h-4" /> },
   ];
-  const navItems = allNavItems.filter(item => !item.caregiverOnly || userRole === 'caregiver');
 
   return (
     <header className="bg-white border-b border-[#c3c6d5] sticky top-0 z-40 shadow-xs">
@@ -69,12 +68,19 @@ export default function Navigation({
           </div>
           <div>
             <h1 className="font-extrabold text-base tracking-tight text-[#003482] leading-tight group-hover:text-[#0c4aac]">MedLab | Adherence pro</h1>
-            <p className="text-[10px] text-[#737784] font-semibold uppercase tracking-wider">7-Compartment Clinical Portal</p>
+            <p className="text-[10px] text-[#737784] font-semibold uppercase tracking-wider">7-Compartment Clinical Platform</p>
           </div>
         </div>
 
         {/* Patient / Role Badge */}
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => onTabChange(currentTab === 'landing' ? 'dashboard' : 'landing')}
+            className="text-xs font-bold text-[#003482] hover:bg-[#eff4ff] border border-[#003482]/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+          >
+            {currentTab === 'landing' ? 'Enter Clinical Portal →' : '← Product Overview'}
+          </button>
+          
           <div className="hidden sm:flex items-center gap-2 bg-[#eff4ff] border border-[#003482]/20 px-3 py-1.5 rounded-lg text-xs">
             <ShieldCheck className="w-4 h-4 text-[#006d37]" />
             <span className="font-bold text-[#003482]">{currentPatientName}</span>

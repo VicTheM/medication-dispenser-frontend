@@ -3,27 +3,26 @@ import {
   Activity, 
   ShieldCheck, 
   Cpu, 
+  Pill, 
   Bot, 
-  BarChart3, 
-  Clock, 
+  Users, 
+  Video, 
   Wifi, 
   CheckCircle2, 
-  Zap, 
-  Download, 
+  AlertTriangle, 
   ArrowRight, 
-  Check, 
+  Play, 
+  Sparkles, 
   Lock, 
-  Server, 
-  Battery, 
-  Volume2, 
-  Video, 
-  ChevronRight, 
-  Sparkles,
+  FileText, 
+  Zap,
+  Volume2,
+  Camera,
   Layers,
-  Award,
-  PhoneCall,
-  UserCheck,
-  Users
+  Clock,
+  ChevronRight,
+  Sliders,
+  Award
 } from 'lucide-react';
 
 interface LandingViewProps {
@@ -31,440 +30,340 @@ interface LandingViewProps {
 }
 
 export default function LandingView({ onLaunchPortal }: LandingViewProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'hardware' | 'ai' | 'adherence' | 'specs'>('overview');
-  const [simState, setSimState] = useState<'idle' | 'dispensing' | 'dispensed'>('idle');
-  const [selectedSlot, setSelectedSlot] = useState<string>('A');
+  const [activeSlot, setActiveSlot] = useState<number>(0);
+  const [simulatedDispensing, setSimulatedDispensing] = useState<boolean>(false);
+  const [dispenseLog, setDispenseLog] = useState<string | null>(null);
 
-  const triggerSimulateDispense = () => {
-    setSimState('dispensing');
+  const slotData = [
+    { slot: 1, day: 'Monday', med: 'Lisinopril 10mg + Metformin 500mg', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
+    { slot: 2, day: 'Tuesday', med: 'Lisinopril 10mg + Atorvastatin 20mg', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
+    { slot: 3, day: 'Wednesday', med: 'Lisinopril 10mg + Metformin 500mg', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
+    { slot: 4, day: 'Thursday', med: 'Lisinopril 10mg + Vitamin D3', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
+    { slot: 5, day: 'Friday', med: 'Lisinopril 10mg + Metformin 500mg', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
+    { slot: 6, day: 'Saturday', med: 'Lisinopril 10mg + Atorvastatin 20mg', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
+    { slot: 7, day: 'Sunday', med: 'Lisinopril 10mg + Multi-Vitamin', time: '08:00 AM', status: 'ready', color: 'bg-emerald-500' },
+  ];
+
+  const handleSimulateDispense = () => {
+    setSimulatedDispensing(true);
+    setDispenseLog('Rotating Carousel Stepper Motor to Compartment ' + (activeSlot + 1) + '...');
+    
     setTimeout(() => {
-      setSimState('dispensed');
-    }, 2500);
-  };
+      setDispenseLog('Optocoupler confirmed alignment. Actuating Solenoid Gate...');
+    }, 1200);
 
-  const resetSimulate = () => {
-    setSimState('idle');
+    setTimeout(() => {
+      setDispenseLog('Acoustic Sensor verified pill drop. Video clip #DISP-8842 recorded (5.2s).');
+      setSimulatedDispensing(false);
+    }, 2600);
   };
 
   return (
-    <div className="bg-[#f8f9ff] text-[#0f1c2d] min-h-screen font-sans selection:bg-[#003482] selection:text-white">
+    <div className="min-h-screen bg-[#f8f9ff] text-[#0f1c2d] flex flex-col font-sans antialiased">
       
-      {/* Top Navbar */}
-      <nav className="bg-white/90 backdrop-blur-md border-b border-[#c3c6d5] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-18 flex items-center justify-between">
-          
-          <div className="flex items-center gap-3">
-            <div className="bg-[#003482] text-white p-2.5 rounded-xl shadow-xs">
-              <Activity className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="font-extrabold text-xl tracking-tight text-[#003482] block leading-none">
-                MedLab <span className="text-xs uppercase font-extrabold text-[#00743b] tracking-wider bg-[#91f8ad] px-2 py-0.5 rounded-full ml-1">Adherence Pro</span>
-              </span>
-              <span className="text-[10px] text-[#737784] font-semibold tracking-wide">Next-Gen IoT Medication Hardware & AI Portal</span>
-            </div>
-          </div>
-
-          <div className="hidden md:flex items-center gap-6 text-xs font-bold text-[#434652]">
-            <a href="#hardware-section" className="hover:text-[#003482] transition-colors">Hardware Unit</a>
-            <a href="#features-section" className="hover:text-[#003482] transition-colors">Key Features</a>
-            <a href="#ai-section" className="hover:text-[#003482] transition-colors">Ally RAG AI</a>
-            <a href="#specs-section" className="hover:text-[#003482] transition-colors">Specifications</a>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => onLaunchPortal('patient')}
-              className="px-4 py-2 text-xs font-bold text-[#003482] bg-[#eff4ff] hover:bg-[#e6eeff] border border-[#c3c6d5] rounded-lg transition-all cursor-pointer hidden sm:block"
-            >
-              Patient Portal
-            </button>
-            <button 
-              onClick={() => onLaunchPortal('caregiver')}
-              className="px-5 py-2.5 text-xs font-bold text-white bg-[#003482] hover:bg-[#0c4aac] rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-            >
-              <UserCheck className="w-4 h-4" />
-              Caregiver Sign In
-            </button>
-          </div>
-        </div>
-      </nav>
+      {/* Top Banner Announcement */}
+      <div className="bg-[#003482] text-white px-4 py-2 text-center text-xs font-medium flex items-center justify-center gap-2 shadow-xs">
+        <span className="bg-[#91f8ad] text-[#004d25] px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+          Clinical Grade
+        </span>
+        <span>MedLab 7-Compartment Dispenser v3.4 Firmware Released with Gemini Ally AI Integration</span>
+        <ArrowRight className="w-3.5 h-3.5 text-[#91f8ad]" />
+      </div>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:py-24 border-b border-[#c3c6d5] bg-gradient-to-b from-white via-[#f8f9ff] to-[#eff4ff]/30">
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            {/* Left Hero Text (Span 7) */}
-            <div className="lg:col-span-7 space-y-6">
-              
-              <div className="inline-flex items-center gap-2 bg-[#eff4ff] border border-[#003482]/20 px-3.5 py-1.5 rounded-full text-xs font-bold text-[#003482]">
-                <ShieldCheck className="w-4 h-4 text-[#00743b]" />
-                HIPAA-Compliant IoT Dispenser System & Clinical RAG Engine
+      <section className="relative pt-12 pb-20 px-4 md:px-8 max-w-7xl mx-auto w-full overflow-hidden">
+        {/* Decorative Grid Backdrop */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40 pointer-events-none" />
+
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          {/* Hero Left Content */}
+          <div className="lg:col-span-7 flex flex-col items-start space-y-6">
+            <div className="inline-flex items-center gap-2 bg-[#eff4ff] border border-[#003482]/20 px-3.5 py-1.5 rounded-full text-xs font-bold text-[#003482]">
+              <Activity className="w-4 h-4 text-[#006d37]" />
+              <span>MedLab Hardware & Clinical Adherence System</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#0f1c2d] leading-[1.1]">
+              Zero-Defect <span className="text-[#003482] underline decoration-[#91f8ad] decoration-4 underline-offset-4">7-Compartment</span> Smart Medication Dispensing.
+            </h1>
+
+            <p className="text-base sm:text-lg text-[#434755] leading-relaxed max-w-2xl font-normal">
+              Combining automated stepper motor carousel hardware, dual acoustic drop verification, micro-camera adherence video recording, and real-time Gemini AI clinical oversight.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-4 pt-2">
+              <button
+                onClick={() => onLaunchPortal('caregiver')}
+                className="bg-[#003482] hover:bg-[#0c4aac] text-white px-6 py-3.5 rounded-xl font-extrabold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer group"
+              >
+                <span>Launch Caregiver Portal</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <button
+                onClick={() => onLaunchPortal('patient')}
+                className="bg-white hover:bg-gray-50 text-[#003482] border-2 border-[#003482] px-6 py-3.5 rounded-xl font-extrabold text-sm transition-all flex items-center gap-2 cursor-pointer shadow-xs"
+              >
+                <Users className="w-4 h-4 text-[#006d37]" />
+                <span>Launch Patient View</span>
+              </button>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-3 gap-6 pt-6 border-t border-[#c3c6d5]/50 w-full max-w-lg">
+              <div>
+                <p className="text-2xl font-black text-[#003482]">99.8%</p>
+                <p className="text-xs text-[#737784] font-semibold mt-0.5">Adherence Rate</p>
+              </div>
+              <div>
+                <p className="text-2xl font-black text-[#006d37]">7 Slots</p>
+                <p className="text-xs text-[#737784] font-semibold mt-0.5">Physical Compartments</p>
+              </div>
+              <div>
+                <p className="text-2xl font-black text-[#003482]">24/7</p>
+                <p className="text-xs text-[#737784] font-semibold mt-0.5">Gemini Clinical AI</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Hero Right Visual: Interactive Hardware Dispenser Replica */}
+          <div className="lg:col-span-5 flex justify-center">
+            <div className="w-full max-w-md bg-white border-2 border-[#003482]/20 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+              {/* Device Header */}
+              <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-bold text-[#0f1c2d] tracking-wide">MEDLAB-DISP-7X</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] bg-[#eff4ff] text-[#003482] font-mono px-2.5 py-1 rounded-full border border-[#003482]/20">
+                  <Wifi className="w-3 h-3 text-[#006d37]" />
+                  <span>ESP32-ONLINE</span>
+                </div>
               </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#0f1c2d] leading-[1.15]">
-                Precision Medication Adherence. <br />
-                <span className="text-[#003482]">Powered by Smart Hardware & AI.</span>
-              </h1>
+              {/* Simulated Hardware LCD Screen */}
+              <div className="bg-[#0f1c2d] text-emerald-400 p-4 rounded-xl font-mono text-xs mb-5 shadow-inner border border-emerald-900/50 relative overflow-hidden">
+                <div className="absolute top-2 right-2 text-[9px] text-emerald-500/80 uppercase font-sans font-bold">LCD Display (20x4)</div>
+                <div className="flex justify-between items-center text-[11px] text-white/90 border-b border-emerald-900/40 pb-1 mb-2">
+                  <span>MEDLAB DISPENSER v3.4</span>
+                  <span>14:30:12</span>
+                </div>
+                <p className="text-emerald-300 font-bold">NEXT DOSAGE: {slotData[activeSlot].day} {slotData[activeSlot].time}</p>
+                <p className="text-emerald-200 text-[11px] mt-1 truncate">MED: {slotData[activeSlot].med}</p>
+                <div className="mt-2 text-[10px] text-emerald-400/80 flex justify-between">
+                  <span>SLOT: #{activeSlot + 1} (COMP-0{activeSlot + 1})</span>
+                  <span className="text-emerald-300">STATUS: READY</span>
+                </div>
+              </div>
 
-              <p className="text-[#434652] text-base md:text-lg max-w-2xl leading-relaxed">
-                Meet the MedLab 7-Compartment Smart Dispenser. Featuring an integrated LCD screen, dual acoustic proximity sensors, tri-color LED status telemetry, automated motor release door, and AI video verification.
-              </p>
+              {/* 7-Slot Carousel Visualiser */}
+              <div className="mb-5">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold text-[#737784] uppercase tracking-wider">7-Compartment Carousel</span>
+                  <span className="text-xs text-[#003482] font-semibold">Select Slot to Inspect</span>
+                </div>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {slotData.map((s, idx) => (
+                    <button
+                      key={s.slot}
+                      onClick={() => setActiveSlot(idx)}
+                      className={`p-2 rounded-xl text-center border-2 transition-all cursor-pointer ${
+                        activeSlot === idx 
+                          ? 'border-[#003482] bg-[#eff4ff] ring-2 ring-[#003482]/20 scale-105' 
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-[10px] font-extrabold text-gray-500">{s.day.substring(0, 3)}</div>
+                      <div className={`w-3 h-3 mx-auto my-1 rounded-full ${s.color}`} />
+                      <div className="text-[10px] font-mono font-bold text-[#0f1c2d]">#{s.slot}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <button 
-                  onClick={() => onLaunchPortal('caregiver')}
-                  className="px-6 py-3.5 bg-[#003482] hover:bg-[#0c4aac] text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              {/* Dispense Action Control */}
+              <div className="space-y-3">
+                <button
+                  onClick={handleSimulateDispense}
+                  disabled={simulatedDispensing}
+                  className="w-full bg-[#006d37] hover:bg-[#004d25] disabled:bg-gray-400 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
                 >
-                  Launch Clinical Caregiver Portal
-                  <ArrowRight className="w-4 h-4" />
+                  {simulatedDispensing ? (
+                    <>
+                      <Zap className="w-4 h-4 animate-spin text-white" />
+                      <span>Actuating Stepper Motor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>Simulate Dispense Trigger (Slot #{activeSlot + 1})</span>
+                    </>
+                  )}
                 </button>
-                <a 
-                  href="#demo-simulator"
-                  className="px-6 py-3.5 bg-white text-[#003482] border border-[#c3c6d5] hover:bg-[#eff4ff] font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Cpu className="w-4 h-4 text-[#003482]" />
-                  View Dispenser Preview
-                </a>
-              </div>
 
-              {/* Stat Highlights */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-[#c3c6d5]/60 max-w-lg">
-                <div>
-                  <p className="text-2xl font-extrabold text-[#003482]">99.8%</p>
-                  <p className="text-xs text-[#737784] font-semibold">Dispense Accuracy</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-extrabold text-[#003482]">7 Slots</p>
-                  <p className="text-xs text-[#737784] font-semibold">Weekly Indexing</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-extrabold text-[#00743b]">500 Log</p>
-                  <p className="text-xs text-[#737784] font-semibold">Offline ESP32 Cache</p>
-                </div>
+                {/* Live Hardware Feedback Log */}
+                {dispenseLog && (
+                  <div className="bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-[11px] font-mono text-gray-700 flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{dispenseLog}</span>
+                  </div>
+                )}
               </div>
 
             </div>
-
-            {/* Right Hero Graphic: Hardware Representation (Span 5) */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-full max-w-md bg-white border-2 border-[#c3c6d5] rounded-3xl p-6 shadow-2xl space-y-4">
-                
-                {/* Visual Label */}
-                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <span className="text-xs font-extrabold text-[#003482] uppercase tracking-wider">MedLab Hardware Unit v3</span>
-                  <span className="text-[10px] font-bold text-[#00743b] bg-[#91f8ad] px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-[#00743b] animate-pulse"></span>
-                    ONLINE
-                  </span>
-                </div>
-
-                {/* 3D-styled Hardware Graphic rendered to match attached CAD image */}
-                <div className="bg-gradient-to-b from-[#e2e6ea] to-[#cbd2d9] border border-[#9aa0a6] rounded-2xl p-6 shadow-inner relative flex flex-col items-center justify-between min-h-[340px]">
-                  
-                  {/* Top: Blue LCD Character Display */}
-                  <div className="w-full bg-[#002bb8] border-2 border-[#001c7a] rounded-md p-3 shadow-md flex items-center justify-center font-mono text-center">
-                    <div className="text-[#64d2ff] font-bold text-sm tracking-wider animate-pulse">
-                      {simState === 'dispensing' 
-                        ? `RELEASE SLOT ${selectedSlot}...` 
-                        : simState === 'dispensed'
-                        ? `SLOT ${selectedSlot} DISPENSED!`
-                        : `MEDLAB READY: SLOT ${selectedSlot}`}
-                    </div>
-                  </div>
-
-                  {/* Middle: Dual Ultrasonic Sensors / Speaker Grilles & Mic Pinhole */}
-                  <div className="flex items-center gap-6 my-6">
-                    <div className="w-14 h-14 bg-[#1f2937] border-2 border-[#4b5563] rounded-full flex items-center justify-center shadow-inner relative overflow-hidden">
-                      <div className="w-10 h-10 border border-gray-500 rounded-full bg-radial from-gray-700 to-gray-900 flex items-center justify-center">
-                        <div className="w-6 h-6 border border-gray-600 rounded-full bg-black"></div>
-                      </div>
-                    </div>
-
-                    <div className="w-14 h-14 bg-[#1f2937] border-2 border-[#4b5563] rounded-full flex items-center justify-center shadow-inner relative overflow-hidden">
-                      <div className="w-10 h-10 border border-gray-500 rounded-full bg-radial from-gray-700 to-gray-900 flex items-center justify-center">
-                        <div className="w-6 h-6 border border-gray-600 rounded-full bg-black"></div>
-                      </div>
-                    </div>
-
-                    {/* Camera / Mic Pinhole */}
-                    <div className="w-3 h-3 bg-black border border-gray-400 rounded-full shadow-inner" title="Camera/Mic Pinhole"></div>
-                  </div>
-
-                  {/* Bottom: Tri-Color Telemetry LEDs & Motorized Dispense Door */}
-                  <div className="w-full flex items-end justify-between gap-4 pt-2">
-                    
-                    {/* Tri-Color LEDs */}
-                    <div className="flex flex-col gap-2 p-1.5 bg-gray-300 rounded-lg border border-gray-400">
-                      <div className={`w-3.5 h-3.5 rounded-full border border-red-800 ${simState === 'idle' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-red-950 opacity-40'}`} title="Alert/Missed LED"></div>
-                      <div className={`w-3.5 h-3.5 rounded-full border border-green-800 ${simState === 'dispensed' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'bg-green-950 opacity-40'}`} title="Ready/Dispensed LED"></div>
-                      <div className={`w-3.5 h-3.5 rounded-full border border-blue-800 ${simState === 'dispensing' ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]' : 'bg-blue-950 opacity-40'}`} title="Network LED"></div>
-                    </div>
-
-                    {/* Motorized Dispense Door */}
-                    <div className="flex-1 h-24 bg-gradient-to-b from-[#b0b8c1] to-[#8c96a0] border-2 border-[#6c757d] rounded-lg relative flex items-center justify-center overflow-hidden shadow-md">
-                      {simState === 'dispensing' ? (
-                        <div className="absolute inset-0 bg-[#003482]/90 text-white flex flex-col items-center justify-center text-xs font-bold animate-pulse">
-                          <Zap className="w-5 h-5 text-[#91f8ad] mb-1 animate-bounce" />
-                          Stepper Motor Opening
-                        </div>
-                      ) : simState === 'dispensed' ? (
-                        <div className="bg-[#91f8ad] text-[#00743b] px-3 py-1.5 rounded-md text-xs font-extrabold flex items-center gap-1.5 shadow-sm">
-                          <CheckCircle2 className="w-4 h-4" />
-                          Pills Delivered
-                        </div>
-                      ) : (
-                        <span className="text-xs text-[#333e48] font-bold font-mono tracking-wider uppercase">
-                          Dispense Tray Closed
-                        </span>
-                      )}
-                    </div>
-
-                  </div>
-
-                </div>
-
-                {/* Sub Caption */}
-                <p className="text-[11px] text-[#737784] text-center italic">
-                  Physical CAD Representation of the MedLab 7-Compartment Hardware Box
-                </p>
-
-              </div>
-            </div>
-
           </div>
+
         </div>
       </section>
 
-      {/* Interactive Hardware Dispenser Simulator */}
-      <section id="demo-simulator" className="py-16 bg-white border-b border-[#c3c6d5]">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-8">
-          
-          <div className="text-center max-w-3xl mx-auto">
-            <span className="text-xs font-bold uppercase text-[#003482] tracking-wider bg-[#eff4ff] px-3 py-1 rounded-full border border-[#003482]/20">
-              Preview &middot; Not Connected to a Live Device
-            </span>
-            <h2 className="text-3xl font-extrabold text-[#0f1c2d] mt-2">
-              See How a 7-Compartment Dispense Looks
+      {/* Hardware Architecture Feature Grid */}
+      <section className="py-16 px-4 md:px-8 bg-white border-y border-[#c3c6d5]/40">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-2 bg-[#eff4ff] text-[#003482] px-3 py-1 rounded-full text-xs font-bold mb-3">
+              <Cpu className="w-4 h-4" />
+              <span>Embedded Hardware Architecture</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-[#0f1c2d] tracking-tight">
+              Built for Uncompromising Reliability in Home & Clinical Care
             </h2>
-            <p className="text-[#434652] text-sm mt-1">
-              This is a visual walkthrough only. Sign in to a caregiver account to control a real dispenser.
+            <p className="text-sm sm:text-base text-[#737784] mt-2">
+              Every detail of the MedLab 7-Compartment unit is designed to prevent missed doses, double dispensations, or unauthorized access.
             </p>
           </div>
 
-          <div className="bg-[#f8f9ff] border border-[#c3c6d5] rounded-2xl p-6 md:p-8 max-w-3xl mx-auto shadow-sm space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold text-[#0f1c2d]">Select a compartment (A–G)</h3>
-              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((slot) => (
-                  <button
-                    key={slot}
-                    onClick={() => {
-                      setSelectedSlot(slot);
-                      resetSimulate();
-                    }}
-                    className={`py-2.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer border ${
-                      selectedSlot === slot 
-                        ? 'bg-[#003482] text-white border-[#003482] shadow-sm' 
-                        : 'bg-white text-[#0f1c2d] border-[#c3c6d5] hover:bg-gray-50'
-                    }`}
-                  >
-                    {slot}
-                  </button>
-                ))}
+            {/* Feature 1 */}
+            <div className="bg-[#f8f9ff] border border-[#c3c6d5]/60 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#003482] text-white rounded-xl flex items-center justify-center mb-4">
+                <Layers className="w-6 h-6" />
               </div>
+              <h3 className="text-lg font-extrabold text-[#0f1c2d] mb-2">7 Motorized Compartments</h3>
+              <p className="text-xs text-[#737784] leading-relaxed">
+                Precision optical encoders align the 7-compartment pill carousel smoothly. Configurable for daily, weekly, or custom interval dosing schedules.
+              </p>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={triggerSimulateDispense}
-                disabled={simState === 'dispensing'}
-                className="flex-1 py-3 bg-[#003482] hover:bg-[#0c4aac] text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
-              >
-                <Zap className="w-4 h-4 fill-white" />
-                Preview Dispense from Slot {selectedSlot}
-              </button>
-              <button
-                onClick={resetSimulate}
-                className="px-4 py-3 bg-white text-[#737784] border border-[#c3c6d5] hover:bg-gray-50 font-bold text-xs rounded-lg cursor-pointer"
-              >
-                Reset
-              </button>
+            {/* Feature 2 */}
+            <div className="bg-[#f8f9ff] border border-[#c3c6d5]/60 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#006d37] text-white rounded-xl flex items-center justify-center mb-4">
+                <Volume2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#0f1c2d] mb-2">Dual Acoustic & Piezo Feedback</h3>
+              <p className="text-xs text-[#737784] leading-relaxed">
+                Microphone and piezoelectric drop sensors detect the exact sonic signature of pills falling into the dispense tray for verified logging.
+              </p>
             </div>
 
-            <p className="text-xs text-center text-[#737784]">
-              {simState === 'idle' && `Dispenser is idle, waiting at slot ${selectedSlot}.`}
-              {simState === 'dispensing' && `Opening compartment ${selectedSlot}...`}
-              {simState === 'dispensed' && `Compartment ${selectedSlot} dispensed successfully.`}
-            </p>
+            {/* Feature 3 */}
+            <div className="bg-[#f8f9ff] border border-[#c3c6d5]/60 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#003482] text-white rounded-xl flex items-center justify-center mb-4">
+                <Camera className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#0f1c2d] mb-2">Micro-Camera Adherence Logging</h3>
+              <p className="text-xs text-[#737784] leading-relaxed">
+                High-definition micro-camera captures a 5-second video recording during every dispense event, allowing caregivers to remotely verify ingestion.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="bg-[#f8f9ff] border border-[#c3c6d5]/60 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#006d37] text-white rounded-xl flex items-center justify-center mb-4">
+                <Bot className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#0f1c2d] mb-2">Gemini Clinical Ally AI</h3>
+              <p className="text-xs text-[#737784] leading-relaxed">
+                Ingests clinical documents, drug leaflets, and care plans. Answers complex dosage questions and monitors drug-drug interactions automatically.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="bg-[#f8f9ff] border border-[#c3c6d5]/60 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#003482] text-white rounded-xl flex items-center justify-center mb-4">
+                <Wifi className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#0f1c2d] mb-2">Offline Resilience & Cloud Sync</h3>
+              <p className="text-xs text-[#737784] leading-relaxed">
+                ESP32 onboard EEPROM stores up to 500 dispense events offline. Automatically resynchronizes with the cloud portal as soon as connectivity resumes.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="bg-[#f8f9ff] border border-[#c3c6d5]/60 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#006d37] text-white rounded-xl flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#0f1c2d] mb-2">Clinical Grade Security</h3>
+              <p className="text-xs text-[#737784] leading-relaxed">
+                End-to-end 256-bit TLS hardware payload encryption, tamper detection sensors, and role-based caregiver vs. patient access controls.
+              </p>
+            </div>
+
           </div>
-
         </div>
       </section>
 
-      {/* Hardware Features Breakdown */}
-      <section id="features-section" className="py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-          <span className="text-xs font-bold uppercase text-[#003482] tracking-wider bg-[#eff4ff] px-3.5 py-1 rounded-full border border-[#003482]/20">
-            Hardware Engineering Excellence
-          </span>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#0f1c2d]">
-            Built to Eliminate Missed & Duplicate Doses
-          </h2>
-          <p className="text-[#434652] text-sm md:text-base">
-            Designed for elderly care, clinical trials, and home health monitoring with complete hardware authority.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* Dual Portal Gateway Section */}
+      <section className="py-16 px-4 md:px-8 max-w-7xl mx-auto w-full">
+        <div className="bg-gradient-to-r from-[#003482] to-[#0c4aac] text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden">
           
-          {/* Card 1 */}
-          <div className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-3 hover:border-[#003482] transition-all group">
-            <div className="w-12 h-12 bg-[#eff4ff] text-[#003482] rounded-xl flex items-center justify-center group-hover:bg-[#003482] group-hover:text-white transition-all">
-              <Cpu className="w-6 h-6" />
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-8 space-y-4">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-[#91f8ad]">
+                <Sparkles className="w-4 h-4" />
+                <span>Interactive Clinical Sandbox</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+                Ready to explore the MedLab Clinical Portal?
+              </h2>
+              <p className="text-sm sm:text-base text-blue-100 max-w-2xl leading-relaxed">
+                Test the full application directly in your browser. Seamlessly manage patient schedules, analyze video adherence logs, send remote hardware commands, or consult the Gemini Ally AI.
+              </p>
             </div>
-            <h3 className="text-lg font-bold text-[#0f1c2d]">High-Contrast Blue LCD Screen</h3>
-            <p className="text-xs text-[#434652] leading-relaxed">
-              Provides crystal-clear, high-legibility text instructions for patients. Displays current slot, time countdowns, and dosage guidance clearly.
-            </p>
-          </div>
 
-          {/* Card 2 */}
-          <div className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-3 hover:border-[#003482] transition-all group">
-            <div className="w-12 h-12 bg-[#eff4ff] text-[#003482] rounded-xl flex items-center justify-center group-hover:bg-[#003482] group-hover:text-white transition-all">
-              <Volume2 className="w-6 h-6" />
+            <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-3 justify-end">
+              <button
+                onClick={() => onLaunchPortal('caregiver')}
+                className="bg-[#91f8ad] hover:bg-[#76e593] text-[#004d25] font-black text-sm px-6 py-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Users className="w-5 h-5" />
+                <span>Enter Caregiver Portal</span>
+              </button>
+
+              <button
+                onClick={() => onLaunchPortal('patient')}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-bold text-sm px-6 py-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Pill className="w-5 h-5 text-[#91f8ad]" />
+                <span>Enter Patient View</span>
+              </button>
             </div>
-            <h3 className="text-lg font-bold text-[#0f1c2d]">Dual Acoustic & Proximity Sensors</h3>
-            <p className="text-xs text-[#434652] leading-relaxed">
-              Integrates dual ultrasonic distance sensors and speaker grilles to detect when a patient approaches the dispenser and speak audible dose reminders.
-            </p>
           </div>
 
-          {/* Card 3 */}
-          <div className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-3 hover:border-[#003482] transition-all group">
-            <div className="w-12 h-12 bg-[#eff4ff] text-[#003482] rounded-xl flex items-center justify-center group-hover:bg-[#003482] group-hover:text-white transition-all">
-              <Zap className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-[#0f1c2d]">Tri-Color Telemetry LEDs</h3>
-            <p className="text-xs text-[#434652] leading-relaxed">
-              Instant physical status indicators: Red for missed dose alerts, Green for ready/dispensed state, and Blue for active network sync.
-            </p>
-          </div>
-
-          {/* Card 4 */}
-          <div className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-3 hover:border-[#003482] transition-all group">
-            <div className="w-12 h-12 bg-[#eff4ff] text-[#003482] rounded-xl flex items-center justify-center group-hover:bg-[#003482] group-hover:text-white transition-all">
-              <Video className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-[#0f1c2d]">AI Video Adherence Verification</h3>
-            <p className="text-xs text-[#434652] leading-relaxed">
-              Front-facing micro camera logs short adherence clips to verify person presence and pill consumption with automated AI face & pill detection.
-            </p>
-          </div>
-
-          {/* Card 5 */}
-          <div className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-3 hover:border-[#003482] transition-all group">
-            <div className="w-12 h-12 bg-[#eff4ff] text-[#003482] rounded-xl flex items-center justify-center group-hover:bg-[#003482] group-hover:text-white transition-all">
-              <Server className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-[#0f1c2d]">Offline ESP32 Memory Caching</h3>
-            <p className="text-xs text-[#434652] leading-relaxed">
-              Stores up to 500 dispense logs locally in non-volatile flash memory during internet outages and auto-resyncs seamlessly when back online.
-            </p>
-          </div>
-
-          {/* Card 6 */}
-          <div className="bg-white border border-[#c3c6d5] rounded-xl p-6 shadow-sm space-y-3 hover:border-[#003482] transition-all group">
-            <div className="w-12 h-12 bg-[#eff4ff] text-[#003482] rounded-xl flex items-center justify-center group-hover:bg-[#003482] group-hover:text-white transition-all">
-              <Bot className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-[#0f1c2d]">Ally RAG Clinical Assistant</h3>
-            <p className="text-xs text-[#434652] leading-relaxed">
-              Connects to ingested PDF care plans for instant voice & text queries regarding dosage schedules, drug-drug interactions, and missed dose protocols.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Specifications Table Section */}
-      <section id="specs-section" className="py-16 bg-[#eff4ff]/40 border-t border-[#c3c6d5]">
-        <div className="max-w-5xl mx-auto px-4 md:px-8 space-y-8">
-          
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-[#0f1c2d]">Hardware Technical Specifications</h2>
-            <p className="text-xs text-[#434652]">MedLab 7-Compartment Smart Dispenser Model M-42-7C</p>
-          </div>
-
-          <div className="bg-white border border-[#c3c6d5] rounded-xl overflow-hidden shadow-sm">
-            <table className="w-full text-left text-xs">
-              <tbody className="divide-y divide-[#c3c6d5]">
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-[#003482] w-1/3">Microcontroller Architecture</td>
-                  <td className="py-3 px-4 text-[#0f1c2d] font-mono">ESP32 Dual-Core Tensilica LX6 (240MHz, Wi-Fi 802.11 b/g/n, BLE 4.2)</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-[#003482]">Tray Mechanism</td>
-                  <td className="py-3 px-4 text-[#0f1c2d]">7-Compartment Carousel, High-Torque NEMA Stepper Motor with Optocoupler Indexing</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-[#003482]">Display & Visuals</td>
-                  <td className="py-3 px-4 text-[#0f1c2d]">16x2 Blue Backlit LCD Screen + 3 Status LEDs (Red, Green, Blue)</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-[#003482]">Sensors & Telemetry</td>
-                  <td className="py-3 px-4 text-[#0f1c2d]">Dual Ultrasonic Proximity Sensors, Optical Pill Pass IR Sensor, Mic Pinhole</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-[#003482]">Power & Battery</td>
-                  <td className="py-3 px-4 text-[#0f1c2d]">5V DC USB-C Main In + 3.7V LiPo 2200mAh Backup Battery (48-Hour Operation)</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-[#003482]">Security & Compliance</td>
-                  <td className="py-3 px-4 text-[#0f1c2d]">256-bit TLS/SSL Telemetry Encryption, HIPAA Compliant Cloud Data Vault</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Final Call to Action */}
-      <section className="py-16 md:py-20 bg-[#003482] text-white text-center">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 space-y-6">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            Ready to Experience Next-Generation Medication Management?
-          </h2>
-          <p className="text-sm md:text-base text-[#dae2ff] max-w-2xl mx-auto">
-            Access the clinical caregiver dashboard or patient portal to manage hardware schedules, view adherence reports, and interact with the AI assistant.
-          </p>
-
-          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-            <button 
-              onClick={() => onLaunchPortal('caregiver')}
-              className="px-8 py-4 bg-white text-[#003482] font-extrabold text-sm rounded-xl hover:bg-gray-100 shadow-lg transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
-            >
-              <UserCheck className="w-5 h-5 text-[#003482]" />
-              Open Caregiver Clinical Portal
-            </button>
-            <button 
-              onClick={() => onLaunchPortal('patient')}
-              className="px-8 py-4 bg-[#eff4ff]/20 text-white border border-white/30 font-extrabold text-sm rounded-xl hover:bg-[#eff4ff]/30 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Users className="w-5 h-5 text-white" />
-              Open Patient Portal
-            </button>
-          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[#c3c6d5] py-6 px-4 md:px-8 text-xs text-[#737784] text-center">
-        <p>© 2026 MedLab Adherence Pro. All rights reserved. Built for 7-Compartment ESP32 Smart Dispensers.</p>
+      <footer className="mt-auto bg-white border-t border-[#c3c6d5] py-8 px-4 md:px-8 text-xs text-[#737784]">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#003482] text-white p-1.5 rounded-lg">
+              <Activity className="w-4 h-4" />
+            </div>
+            <span className="font-extrabold text-[#003482] text-sm">MedLab Adherence Pro</span>
+            <span className="text-[11px] text-[#737784]">| 7-Compartment Clinical Hardware Platform</span>
+          </div>
+
+          <div className="flex items-center gap-6 text-xs font-semibold text-[#434755]">
+            <button onClick={() => onLaunchPortal('caregiver')} className="hover:text-[#003482] cursor-pointer">Clinical Dashboard</button>
+            <button onClick={() => onLaunchPortal('patient')} className="hover:text-[#003482] cursor-pointer">Patient Portal</button>
+            <span className="text-gray-300">|</span>
+            <span className="text-emerald-700 font-bold">System Status: Operational</span>
+          </div>
+        </div>
       </footer>
 
     </div>
