@@ -1,0 +1,45 @@
+:root {
+  /* Color */
+  --ink: #14213d;
+  --ink-soft: #2b3a5e;
+  --paper: #f6f7fb;
+  --paper-raised: #ffffff;
+  --horizon: #3a6ea5;
+  --horizon-dark: #2c5580;
+  --horizon-tint: #e6eef6;
+  --dawn: #e8a45c;
+  --dawn-tint: #fbf0e2;
+  --moss: #6b8f71;
+  --moss-tint: #eaf1ea;
+  --clay: #c1666b;
+  --clay-tint: #f7e9e9;
+  --mist: #e4e8f0;
+  --slate: #5b6478;
+  --slate-light: #8790a3;
+
+  /* Type */
+  --font-display: "Fraunces", "Iowan Old Style", serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Scale */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --shadow-sm: 0 1px 2px rgba(20, 33, 61, 0.06), 0 1px 1px rgba(20, 33, 61, 0.04);
+  --shadow-md: 0 8px 24px rgba(20, 33, 61, 0.08), 0 2px 8px rgba(20, 33, 61, 0.05);
+  --shadow-lg: 0 24px 60px rgba(20, 33, 61, 0.14);
+
+  /* Compartment letter colors (A-G) - a gentle 7-step gradient across the day */
+  --c-a: #3a6ea5;
+  --c-b: #4f7fac;
+  --c-c: #6f8fa0;
+  --c-d: #e8a45c;
+  --c-e: #d98a52;
+  --c-f: #b06a5a;
+  --c-g: #6b5a72;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* App is designed for a light, calm surface intentionally (medical trust context) */
+}
