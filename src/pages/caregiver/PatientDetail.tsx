@@ -376,9 +376,10 @@ function ScheduleForm({ patientId, letter, medications, existing, onClose, onDon
 // ---------------------------------------------------------------------------
 function DeviceTab({ patientId, device, onChange }: { patientId: string; device: DeviceStatus | null; onChange: () => void }) {
   const [uid, setUid] = useState("");
-  const [secret, setSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [revealedSecret, setRevealedSecret] = useState<string | null>(null);
+  const [revealing, setRevealing] = useState(false);
   const { show } = useToast();
 
   async function assign(e: React.FormEvent) {
@@ -387,12 +388,38 @@ function DeviceTab({ patientId, device, onChange }: { patientId: string; device:
     setError("");
     try {
       const d = await api.post<DeviceFull>(`/caregivers/patients/${patientId}/device`, { device_uid: uid });
-      setSecret(d.device_secret);
       onChange();
+      setRevealedSecret(d.device_secret); // shown in a modal, independent of the device-info panel below
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't assign device");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function revealSecret() {
+    setRevealing(true);
+    try {
+      const res = await api.get<{ device_uid: string; device_secret: string }>(`/caregivers/patients/${patientId}/device/secret`);
+      setRevealedSecret(res.device_secret);
+    } catch (err) {
+      show(err instanceof ApiError ? err.message : "Couldn't fetch device secret", "error");
+    } finally {
+      setRevealing(false);
+    }
+  }
+
+  async function regenerateSecret() {
+    if (!confirm("This invalidates the current secret — the physical device will need to be reprovisioned with the new one before it can reconnect. Continue?")) return;
+    setRevealing(true);
+    try {
+      const res = await api.post<{ device_uid: string; device_secret: string }>(`/caregivers/patients/${patientId}/device/regenerate-secret`);
+      setRevealedSecret(res.device_secret);
+      show("Secret rotated — update the device with the new value");
+    } catch (err) {
+      show(err instanceof ApiError ? err.message : "Couldn't regenerate secret", "error");
+    } finally {
+      setRevealing(false);
     }
   }
 
@@ -406,17 +433,12 @@ function DeviceTab({ patientId, device, onChange }: { patientId: string; device:
     }
   }
 
-  if (!device) {
-    return (
-      <div className="card card-pad" style={{ maxWidth: 480 }}>
-        <h3 style={{ fontSize: 16 }} className="mb-16">Assign hardware</h3>
-        {error && <div className="form-error">{error}</div>}
-        {secret ? (
-          <div>
-            <p className="mb-8">Device assigned. Give this secret to whoever is provisioning the unit — it's shown only once:</p>
-            <p className="mono card-pad" style={{ background: "var(--paper)", wordBreak: "break-all" }}>{secret}</p>
-          </div>
-        ) : (
+  return (
+    <div className="flex-col gap-24">
+      {!device ? (
+        <div className="card card-pad" style={{ maxWidth: 480 }}>
+          <h3 style={{ fontSize: 16 }} className="mb-16">Assign hardware</h3>
+          {error && <div className="form-error">{error}</div>}
           <form onSubmit={assign}>
             <div className="field">
               <label htmlFor="uid">Device serial / QR code</label>
@@ -424,43 +446,89 @@ function DeviceTab({ patientId, device, onChange }: { patientId: string; device:
             </div>
             <button className="btn btn-primary btn-block" disabled={loading} type="submit">{loading ? <span className="spinner" /> : "Assign device"}</button>
           </form>
-        )}
-      </div>
-    );
+        </div>
+      ) : (
+        <>
+          <div className="card card-pad">
+            <div className="grid-2">
+              <div>
+                <p className="text-sm">Device ID</p>
+                <p className="mono">{device.device_uid}</p>
+              </div>
+              <div>
+                <p className="text-sm">Status</p>
+                <StatusBadge status={device.status} />
+              </div>
+              <div>
+                <p className="text-sm">Battery</p>
+                <p>{device.battery_level != null ? `${device.battery_level.toFixed(0)}%` : "—"}</p>
+              </div>
+              <div>
+                <p className="text-sm">Last seen</p>
+                <p>{device.last_seen_at ? formatDateTime(device.last_seen_at) : "never"}</p>
+              </div>
+            </div>
+            <div className="mt-16 flex gap-8">
+              <button className="btn btn-ghost btn-sm" disabled={revealing} onClick={revealSecret}>
+                {revealing ? <span className="spinner" /> : "View device secret"}
+              </button>
+              <button className="btn btn-ghost btn-sm" disabled={revealing} onClick={regenerateSecret}>Rotate secret</button>
+            </div>
+          </div>
+          <div className="card card-pad">
+            <h3 style={{ fontSize: 15 }} className="mb-16">Send a command</h3>
+            <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+              <ManualDispenseControl onDispense={(c) => sendCommand("manual_dispense", { compartment: c })} />
+              <button className="btn btn-ghost btn-sm" onClick={() => sendCommand("sync")}>Sync offline data</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => sendCommand("update_schedule")}>Re-push schedule</button>
+              <button className="btn btn-danger btn-sm" onClick={() => { if (confirm("Restart this device now?")) sendCommand("restart"); }}>Restart device</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {revealedSecret && (
+        <SecretModal deviceUid={device?.device_uid || uid} secret={revealedSecret} onClose={() => setRevealedSecret(null)} />
+      )}
+    </div>
+  );
+}
+
+function SecretModal({ deviceUid, secret, onClose }: { deviceUid: string; secret: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(secret);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard API unavailable (e.g. insecure context) - the text is still selectable below
+    }
   }
 
   return (
-    <div className="flex-col gap-24">
-      <div className="card card-pad">
-        <div className="grid-2">
-          <div>
-            <p className="text-sm">Device ID</p>
-            <p className="mono">{device.device_uid}</p>
-          </div>
-          <div>
-            <p className="text-sm">Status</p>
-            <StatusBadge status={device.status} />
-          </div>
-          <div>
-            <p className="text-sm">Battery</p>
-            <p>{device.battery_level != null ? `${device.battery_level.toFixed(0)}%` : "—"}</p>
-          </div>
-          <div>
-            <p className="text-sm">Last seen</p>
-            <p>{device.last_seen_at ? formatDateTime(device.last_seen_at) : "never"}</p>
-          </div>
-        </div>
+    <Modal title="Device credentials" onClose={onClose} dismissOnBackdrop={false}>
+      <p className="mb-16">
+        Give these to whoever is provisioning <strong className="mono">{deviceUid}</strong>. This stays open until
+        you close it — take your time copying it.
+      </p>
+      <div className="field">
+        <label>Device secret</label>
+        <textarea
+          readOnly
+          value={secret}
+          onFocus={(e) => e.currentTarget.select()}
+          rows={2}
+          className="mono"
+          style={{ resize: "none" }}
+        />
       </div>
-      <div className="card card-pad">
-        <h3 style={{ fontSize: 15 }} className="mb-16">Send a command</h3>
-        <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
-          <ManualDispenseControl onDispense={(c) => sendCommand("manual_dispense", { compartment: c })} />
-          <button className="btn btn-ghost btn-sm" onClick={() => sendCommand("sync")}>Sync offline data</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => sendCommand("update_schedule")}>Re-push schedule</button>
-          <button className="btn btn-danger btn-sm" onClick={() => { if (confirm("Restart this device now?")) sendCommand("restart"); }}>Restart device</button>
-        </div>
+      <div className="flex gap-8 mt-8">
+        <button className="btn btn-accent" onClick={copy}>{copied ? "Copied ✓" : "Copy to clipboard"}</button>
+        <button className="btn btn-ghost" onClick={onClose}>Done</button>
       </div>
-    </div>
+    </Modal>
   );
 }
 

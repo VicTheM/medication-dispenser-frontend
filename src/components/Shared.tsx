@@ -32,10 +32,12 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+export function Modal({ title, onClose, children, wide, dismissOnBackdrop = true }: {
+  title: string; onClose: () => void; children: ReactNode; wide?: boolean; dismissOnBackdrop?: boolean;
+}) {
   return (
     <div
-      onClick={onClose}
+      onClick={dismissOnBackdrop ? onClose : undefined}
       style={{ position: "fixed", inset: 0, background: "rgba(20,33,61,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 50 }}
     >
       <div
